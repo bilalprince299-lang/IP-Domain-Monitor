@@ -161,8 +161,8 @@ async function testAll() {
 
 // --- ISP Logo Map ---
 const ISP_LOGOS = {
-  'Etisalat': '/img/etisalat.svg',
-  'du': '/img/du.svg',
+  'Etisalat': '/img/etisalat.png',
+  'du': '/img/du.png',
 };
 
 // --- Show ISP Banner ---
