@@ -628,11 +628,12 @@ tr:hover td {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -643,20 +644,31 @@ tr:hover td {
 }
 
 .history-date {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
 .history-stats {
   display: flex;
-  gap: 16px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .history-stat {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  background: var(--surface2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.history-stat .badge {
+  min-width: 22px;
+  text-align: center;
 }
 
 /* Toast */
