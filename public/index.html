@@ -94,11 +94,13 @@ http://10.0.0.1/iptv
 
       <!-- ISP Banner -->
       <div class="isp-banner" id="ispBanner" style="display:none">
-        <span id="ispIcon">--</span>
+        <img id="ispLogo" src="" alt="" style="height:30px; border-radius:6px; display:none;">
         <span>Tested via <strong id="ispName">Unknown</strong></span>
         <span class="isp-ip" id="ispIp"></span>
-        <button class="btn btn-primary btn-sm" id="retestIspBtn" onclick="retestOtherISP()" style="display:none; margin-left:auto;">
-          Re-test via <strong id="retestIspName">du</strong>
+        <button class="btn btn-primary btn-sm" id="retestIspBtn" onclick="retestOtherISP()" style="display:none; margin-left:auto; gap:6px;">
+          Re-test via
+          <img id="retestIspLogo" src="" alt="" style="height:20px; border-radius:4px; display:none;">
+          <strong id="retestIspName">du</strong>
         </button>
       </div>
 

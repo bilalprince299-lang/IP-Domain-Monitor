@@ -159,6 +159,12 @@ async function testAll() {
   }
 }
 
+// --- ISP Logo Map ---
+const ISP_LOGOS = {
+  'Etisalat': '/img/etisalat.svg',
+  'du': '/img/du.svg',
+};
+
 // --- Show ISP Banner ---
 function showIspBanner(isp, publicIp) {
   const banner = document.getElementById('ispBanner');
@@ -166,20 +172,39 @@ function showIspBanner(isp, publicIp) {
   document.getElementById('ispName').textContent = isp;
   document.getElementById('ispIp').textContent = publicIp ? `Public IP: ${publicIp}` : '';
 
-  // Show re-test button with opposite ISP name
+  // Show ISP logo
+  const logo = document.getElementById('ispLogo');
+  if (ISP_LOGOS[isp]) {
+    logo.src = ISP_LOGOS[isp];
+    logo.alt = isp;
+    logo.style.display = 'block';
+  } else {
+    logo.style.display = 'none';
+  }
+
+  // Show re-test button with opposite ISP
   const retestBtn = document.getElementById('retestIspBtn');
   const retestName = document.getElementById('retestIspName');
+  const retestLogo = document.getElementById('retestIspLogo');
+  let otherIsp = '';
 
   if (isp === 'Etisalat') {
-    retestName.textContent = 'du';
-    retestBtn.style.display = 'inline-flex';
+    otherIsp = 'du';
   } else if (isp === 'du') {
-    retestName.textContent = 'Etisalat';
-    retestBtn.style.display = 'inline-flex';
+    otherIsp = 'Etisalat';
   } else {
-    // Non-UAE ISP - still show re-test option
-    retestName.textContent = 'Other ISP';
-    retestBtn.style.display = 'inline-flex';
+    otherIsp = 'Other ISP';
+  }
+
+  retestName.textContent = otherIsp;
+  retestBtn.style.display = 'inline-flex';
+
+  if (ISP_LOGOS[otherIsp]) {
+    retestLogo.src = ISP_LOGOS[otherIsp];
+    retestLogo.alt = otherIsp;
+    retestLogo.style.display = 'block';
+  } else {
+    retestLogo.style.display = 'none';
   }
 }
 
