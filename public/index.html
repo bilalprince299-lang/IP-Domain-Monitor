@@ -137,7 +137,9 @@ http://10.0.0.1/iptv
               </div>
               <div class="card-actions">
                 <button class="btn btn-outline btn-sm" onclick="toggleResultList('activeList', this)">Show</button>
-                <button class="btn-copy" onclick="copySection('active')">Copy All</button>
+                <button class="btn-copy" onclick="copySection('active','domains')">Copy Domains</button>
+                <button class="btn-copy" onclick="copySection('active','links')">Copy Links</button>
+                <button class="btn-copy" onclick="copySection('active','all')">Copy All</button>
               </div>
             </div>
             <ul class="link-list" id="activeList" style="display:none"></ul>
@@ -153,7 +155,9 @@ http://10.0.0.1/iptv
               </div>
               <div class="card-actions">
                 <button class="btn btn-outline btn-sm" onclick="toggleResultList('downList', this)">Show</button>
-                <button class="btn-copy" onclick="copySection('down')">Copy All</button>
+                <button class="btn-copy" onclick="copySection('down','domains')">Copy Domains</button>
+                <button class="btn-copy" onclick="copySection('down','links')">Copy Links</button>
+                <button class="btn-copy" onclick="copySection('down','all')">Copy All</button>
               </div>
             </div>
             <ul class="link-list" id="downList" style="display:none"></ul>
@@ -169,7 +173,9 @@ http://10.0.0.1/iptv
               </div>
               <div class="card-actions">
                 <button class="btn btn-outline btn-sm" onclick="toggleResultList('blockedList', this)">Show</button>
-                <button class="btn-copy" onclick="copySection('blocked')">Copy All</button>
+                <button class="btn-copy" onclick="copySection('blocked','domains')">Copy Domains</button>
+                <button class="btn-copy" onclick="copySection('blocked','links')">Copy Links</button>
+                <button class="btn-copy" onclick="copySection('blocked','all')">Copy All</button>
               </div>
             </div>
             <ul class="link-list" id="blockedList" style="display:none"></ul>

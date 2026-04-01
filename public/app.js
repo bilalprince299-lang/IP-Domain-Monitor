@@ -375,7 +375,7 @@ function copyText(text, btn) {
   });
 }
 
-function copySection(type) {
+function copySection(type, mode) {
   if (!testResults) return;
 
   let items;
@@ -385,9 +385,32 @@ function copySection(type) {
 
   if (!items || !items.length) return;
 
-  const text = items.map(item => buildDisplayUrl(item)).join('\n');
+  let text = '';
+
+  if (mode === 'domains') {
+    // Sirf domain/IP + port (bina http/https)
+    text = items.map(item => {
+      if (item.port) return `${item.host}:${item.port}`;
+      return item.host;
+    }).join('\n');
+  }
+  else if (mode === 'links') {
+    // Full URLs with http/https
+    text = items.map(item => buildDisplayUrl(item)).join('\n');
+  }
+  else if (mode === 'all') {
+    // Dono - pehle links, phir neeche domains
+    const links = items.map(item => buildDisplayUrl(item)).join('\n');
+    const domains = items.map(item => {
+      if (item.port) return `${item.host}:${item.port}`;
+      return item.host;
+    }).join('\n');
+    text = `--- Links ---\n${links}\n\n--- Domains/IPs ---\n${domains}`;
+  }
+
   navigator.clipboard.writeText(text).then(() => {
-    showToast(`${items.length} links copied to clipboard`);
+    const labels = { domains: 'Domains', links: 'Links', all: 'Links + Domains' };
+    showToast(`${items.length} ${labels[mode]} copied to clipboard`);
   });
 }
 
