@@ -1,5 +1,5 @@
 /**
- * IP Domain Monitor - Frontend Application
+ * AL KHALEEJ IP MONITER - Frontend Application
  */
 
 let parsedLinks = [];

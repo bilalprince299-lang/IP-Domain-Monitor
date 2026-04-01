@@ -1,13 +1,13 @@
 #!/bin/bash
 # ============================================
-# IP Domain Monitor - One Click Installer
+# AL KHALEEJ IP MONITER - One Click Installer
 # ============================================
 
 set -e
 
 echo ""
 echo "======================================"
-echo "  IP Domain Monitor - Installing..."
+echo "  AL KHALEEJ IP MONITER - Installing..."
 echo "======================================"
 echo ""
 
@@ -91,22 +91,22 @@ launchctl load "$PLIST_FILE"
 sleep 3
 
 # Check if running
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:3847/ | grep -q "200"; then
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:2397/ | grep -q "200"; then
     echo ""
     echo "======================================"
     echo "  DONE! Software install ho gaya!"
     echo "======================================"
     echo ""
-    echo "  Browser mein kholo: http://localhost:3847"
+    echo "  Browser mein kholo: http://localhost:2397"
     echo ""
     echo "  Auto-start: ON (MacBook restart pe khud chalega)"
     echo "======================================"
     echo ""
     # Open in browser
-    open http://localhost:3847
+    open http://localhost:2397
 else
     echo ""
     echo "Server start ho raha hai... Browser mein kholo:"
-    echo "  http://localhost:3847"
+    echo "  http://localhost:2397"
     echo ""
 fi

@@ -5,7 +5,7 @@ const { testLinks, testSingleLink, detectCurrentISP } = require('./lib/tester');
 const { saveTestSession, getHistory, getSessionResults, cleanOldData } = require('./lib/db');
 
 const app = express();
-const PORT = 3847;
+const PORT = 2397;
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -135,5 +135,5 @@ cleanOldData();
 setInterval(cleanOldData, 24 * 60 * 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`IP Domain Monitor running at http://localhost:${PORT}`);
+  console.log(`AL KHALEEJ IP MONITER running at http://localhost:${PORT}`);
 });
