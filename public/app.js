@@ -165,6 +165,90 @@ function showIspBanner(isp, publicIp) {
   banner.style.display = 'flex';
   document.getElementById('ispName').textContent = isp;
   document.getElementById('ispIp').textContent = publicIp ? `Public IP: ${publicIp}` : '';
+
+  // Show re-test button with opposite ISP name
+  const retestBtn = document.getElementById('retestIspBtn');
+  const retestName = document.getElementById('retestIspName');
+
+  if (isp === 'Etisalat') {
+    retestName.textContent = 'du';
+    retestBtn.style.display = 'inline-flex';
+  } else if (isp === 'du') {
+    retestName.textContent = 'Etisalat';
+    retestBtn.style.display = 'inline-flex';
+  } else {
+    // Non-UAE ISP - still show re-test option
+    retestName.textContent = 'Other ISP';
+    retestBtn.style.display = 'inline-flex';
+  }
+}
+
+// --- Re-test on Other ISP ---
+async function retestOtherISP() {
+  if (!parsedLinks.length) {
+    showToast('No links to re-test. Please run a test first.');
+    return;
+  }
+
+  const otherIsp = document.getElementById('retestIspName').textContent;
+  if (!confirm(`Switch your network to ${otherIsp} first!\n\nKya aap ne ${otherIsp} pe switch kar liya hai?`)) {
+    return;
+  }
+
+  // Re-run test with same parsed links
+  const btn = document.getElementById('retestIspBtn');
+  btn.disabled = true;
+  btn.textContent = 'Testing...';
+
+  const progress = document.getElementById('progressContainer');
+  progress.classList.add('active');
+  updateProgress(0, parsedLinks.length);
+
+  try {
+    const response = await fetch('/api/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ links: parsedLinks })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const msg = JSON.parse(line.slice(6));
+          if (msg.type === 'isp') {
+            showIspBanner(msg.isp, msg.publicIp);
+          } else if (msg.type === 'progress') {
+            updateProgress(msg.completed, msg.total);
+          } else if (msg.type === 'done') {
+            testResults = msg;
+            updateProgress(msg.total, msg.total);
+            showStats(msg);
+            showResults(msg);
+            showToast(`Re-test complete via ${msg.testedVia}! ${msg.active.count} active, ${msg.down.count} down, ${msg.ispBlocked.count} ISP blocked`);
+            setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Re-test via <strong id="retestIspName">' + otherIsp + '</strong>';
+    setTimeout(() => progress.classList.remove('active'), 2000);
+  }
 }
 
 // --- Show Stats ---
