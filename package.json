@@ -1,0 +1,13 @@
+{
+  "name": "ip-domain-monitor",
+  "version": "1.0.0",
+  "description": "Anti-Piracy IP/Domain Monitor - Block verification tool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "better-sqlite3": "^11.6.0"
+  }
+}

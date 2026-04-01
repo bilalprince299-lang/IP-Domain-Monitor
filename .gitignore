@@ -1,0 +1,7 @@
+node_modules/
+data/history.db
+data/history.db-wal
+data/history.db-shm
+data/server.log
+data/error.log
+.DS_Store

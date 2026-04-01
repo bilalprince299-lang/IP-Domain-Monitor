@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IP Domain Monitor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <span class="icon">IP</span>
+      IP Domain Monitor
+    </h1>
+    <div class="header-actions">
+      <button class="btn btn-primary btn-sm" id="newTestBtn" onclick="newTest()" style="display:none">New Test</button>
+      <button class="btn btn-outline btn-sm" onclick="exportCsv()">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="monitor" onclick="switchTab('monitor')">Monitor</button>
+      <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+    </div>
+
+    <!-- Monitor Tab -->
+    <div id="tab-monitor">
+      <!-- Input -->
+      <div class="input-section" id="inputSection">
+        <h2>Paste Links</h2>
+        <p>Paste your list of domains, IPs, and URLs below. Mixed formats supported.</p>
+        <textarea id="linkInput" placeholder="Paste links here... Examples:
+http://192.168.1.1:8080/live/stream
+https://example.com:8880/content
+45.67.89.10:80
+streaming-site.com
+http://10.0.0.1/iptv
+172.16.0.1"></textarea>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnParse" onclick="parseLinks()">
+            Parse Links
+          </button>
+          <button class="btn btn-success" id="btnTest" onclick="testAll()" disabled>
+            Test All
+          </button>
+          <label class="btn btn-outline" for="fileImport" style="cursor:pointer;">
+            Import File
+          </label>
+          <input type="file" id="fileImport" accept=".txt,.csv,.tsv,.log,.m3u,.m3u8,.json,.xml,.lst,.dat" style="display:none" onchange="importFile(event)">
+          <button class="btn btn-outline" onclick="clearAll()">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Testing 0 / 0</div>
+      </div>
+
+      <!-- Parsed Results -->
+      <div class="parsed-section" id="parsedSection">
+        <div class="parsed-header">
+          <div class="card-title">
+            <h3>Extracted Links</h3>
+            <span class="badge badge-blue" id="parsedCount">0</span>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnToggleLinks" onclick="toggleParsedTable()">Show Links</button>
+        </div>
+        <div class="table-wrap" id="parsedTableWrap" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Host</th>
+                <th>Port</th>
+                <th>Protocol</th>
+                <th>Type</th>
+                <th>Original</th>
+              </tr>
+            </thead>
+            <tbody id="parsedTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ISP Banner -->
+      <div class="isp-banner" id="ispBanner" style="display:none">
+        <span id="ispIcon">--</span>
+        <span>Tested via <strong id="ispName">Unknown</strong></span>
+        <span class="isp-ip" id="ispIp"></span>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-card">
+          <div class="stat-number blue" id="statTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number green" id="statActive">0</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number red" id="statDown">0</div>
+          <div class="stat-label">Down / Dead</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number orange" id="statBlocked">0</div>
+          <div class="stat-label">ISP Blocked</div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-section" id="resultsSection">
+        <div class="results-grid">
+          <!-- Active -->
+          <div class="result-card active-card" id="activeCard" style="display:none">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="status-dot green"></span>
+                <h3>Active Links</h3>
+                <span class="badge badge-green" id="activeCount">0</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-outline btn-sm" onclick="toggleResultList('activeList', this)">Show</button>
+                <button class="btn-copy" onclick="copySection('active')">Copy All</button>
+              </div>
+            </div>
+            <ul class="link-list" id="activeList" style="display:none"></ul>
+          </div>
+
+          <!-- Down -->
+          <div class="result-card down-card" id="downCard" style="display:none">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="status-dot red"></span>
+                <h3>Down / Dead</h3>
+                <span class="badge badge-red" id="downCount">0</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-outline btn-sm" onclick="toggleResultList('downList', this)">Show</button>
+                <button class="btn-copy" onclick="copySection('down')">Copy All</button>
+              </div>
+            </div>
+            <ul class="link-list" id="downList" style="display:none"></ul>
+          </div>
+
+          <!-- ISP Blocked -->
+          <div class="result-card blocked-card" id="blockedCard" style="display:none">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="status-dot orange"></span>
+                <h3>ISP Blocked (Network Block)</h3>
+                <span class="badge badge-orange" id="blockedCount">0</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-outline btn-sm" onclick="toggleResultList('blockedList', this)">Show</button>
+                <button class="btn-copy" onclick="copySection('blocked')">Copy All</button>
+              </div>
+            </div>
+            <ul class="link-list" id="blockedList" style="display:none"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="tab-history" class="history-section">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <button class="btn btn-outline btn-sm" style="border-color:var(--red); color:var(--red);" onclick="clearHistory()">Clear History</button>
+      </div>
+      <div id="historyList">
+        <div class="empty-state">
+          <div class="icon">---</div>
+          <p>No history yet. Run a test to see results here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
