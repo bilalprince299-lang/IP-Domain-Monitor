@@ -395,12 +395,12 @@ function copySection(type, mode) {
     }).join('\n');
   }
   else if (mode === 'links') {
-    // Full URLs with http/https
-    text = items.map(item => buildDisplayUrl(item)).join('\n');
+    // Original full URLs jaisa paste kiya tha
+    text = items.map(item => item.original || buildDisplayUrl(item)).join('\n');
   }
   else if (mode === 'all') {
-    // Dono - pehle links, phir neeche domains
-    const links = items.map(item => buildDisplayUrl(item)).join('\n');
+    // Dono - pehle original links, phir neeche domains/IPs
+    const links = items.map(item => item.original || buildDisplayUrl(item)).join('\n');
     const domains = items.map(item => {
       if (item.port) return `${item.host}:${item.port}`;
       return item.host;
