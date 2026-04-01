@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Shield background -->
+  <path d="M20 2 L36 10 L36 22 C36 30 28 37 20 39 C12 37 4 30 4 22 L4 10 Z" fill="url(#shieldGrad)" stroke="#3b82f6" stroke-width="1.5"/>
+  <!-- Gradient -->
+  <defs>
+    <linearGradient id="shieldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <!-- Eye / monitoring symbol -->
+  <ellipse cx="20" cy="19" rx="10" ry="6" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+  <circle cx="20" cy="19" r="3.5" fill="#3b82f6"/>
+  <circle cx="20" cy="19" r="1.5" fill="#0f172a"/>
+  <!-- Crosshair lines -->
+  <line x1="20" y1="11" x2="20" y2="14" stroke="#ef4444" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="20" y1="24" x2="20" y2="27" stroke="#ef4444" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="8" y1="19" x2="11" y2="19" stroke="#ef4444" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="29" y1="19" x2="32" y2="19" stroke="#ef4444" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Block / ban slash -->
+  <line x1="13" y1="28" x2="27" y2="10" stroke="#ef4444" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+</svg>
