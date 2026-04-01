@@ -11,15 +11,15 @@
   --border: #475569;
   --text: #f1f5f9;
   --text-dim: #94a3b8;
-  --green: #22c55e;
-  --green-bg: #052e16;
-  --green-border: #166534;
-  --red: #ef4444;
-  --red-bg: #350a0a;
-  --red-border: #991b1b;
-  --orange: #f97316;
-  --orange-bg: #3b1a06;
-  --orange-border: #c2410c;
+  --green: #4ade80;
+  --green-bg: #0a3d1e;
+  --green-border: #22c55e;
+  --red: #f87171;
+  --red-bg: #451215;
+  --red-border: #ef4444;
+  --orange: #fb923c;
+  --orange-bg: #4a2008;
+  --orange-border: #f97316;
   --blue: #3b82f6;
   --blue-bg: #172554;
   --purple: #a855f7;
@@ -473,17 +473,17 @@ tr:hover td {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 8px;
-  margin-bottom: 4px;
-  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 6px;
+  background: rgba(0, 0, 0, 0.25);
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 13px;
+  font-size: 14px;
   gap: 12px;
 }
 
 .link-item:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .link-info {
@@ -498,6 +498,8 @@ tr:hover td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #f8fafc;
+  font-weight: 500;
 }
 
 .link-meta {
@@ -508,18 +510,19 @@ tr:hover td {
 }
 
 .link-meta .tag {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-dim);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
   white-space: nowrap;
+  font-weight: 500;
 }
 
-.link-meta .tag.port { color: var(--blue); }
-.link-meta .tag.ip { color: var(--purple); }
-.link-meta .tag.time { color: var(--text-dim); }
-.link-meta .tag.isp { color: var(--orange); }
+.link-meta .tag.port { color: #93c5fd; background: rgba(59, 130, 246, 0.15); }
+.link-meta .tag.ip { color: #c4b5fd; background: rgba(168, 85, 247, 0.15); }
+.link-meta .tag.time { color: #cbd5e1; }
+.link-meta .tag.isp { color: #fdba74; background: rgba(249, 115, 22, 0.15); }
 
 /* Stats Bar */
 .stats-bar {
