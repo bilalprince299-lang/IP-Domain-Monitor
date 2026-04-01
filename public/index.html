@@ -108,24 +108,24 @@ http://10.0.0.1/iptv
       <!-- Stats -->
       <div class="stats-bar" id="statsBar">
         <div class="stat-card">
-          <div class="stat-icon">&#128279;</div>
+          <div class="stat-icon stat-icon-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
           <div class="stat-number blue" id="statTotal">0</div>
-          <div class="stat-label">Total Links</div>
+          <div class="stat-label">Total</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">&#9989;</div>
+          <div class="stat-icon stat-icon-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
           <div class="stat-number green" id="statActive">0</div>
           <div class="stat-label">Active</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">&#10060;</div>
+          <div class="stat-icon stat-icon-red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
           <div class="stat-number red" id="statDown">0</div>
-          <div class="stat-label">Down / Dead</div>
+          <div class="stat-label">Down</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">&#128683;</div>
+          <div class="stat-icon stat-icon-orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>
           <div class="stat-number orange" id="statBlocked">0</div>
-          <div class="stat-label">ISP Blocked</div>
+          <div class="stat-label">Blocked</div>
         </div>
       </div>
 
@@ -135,16 +135,14 @@ http://10.0.0.1/iptv
           <!-- Active -->
           <div class="result-card active-card" id="activeCard" style="display:none">
             <div class="card-header">
-              <div class="card-title">
-                <span class="status-dot green"></span>
-                <h3>Active Links</h3>
-                <span class="badge badge-green" id="activeCount">0</span>
-              </div>
+              <span class="status-dot green"></span>
+              <h3>Active</h3>
+              <span class="badge badge-green" id="activeCount">0</span>
               <div class="card-actions">
+                <button class="btn-copy" onclick="copySection('active','domains')">Domains</button>
+                <button class="btn-copy" onclick="copySection('active','links')">Links</button>
+                <button class="btn-copy" onclick="copySection('active','all')">All</button>
                 <button class="btn btn-outline btn-sm" onclick="toggleResultList('activeList', this)">Show</button>
-                <button class="btn-copy" onclick="copySection('active','domains')">Copy Domains</button>
-                <button class="btn-copy" onclick="copySection('active','links')">Copy Links</button>
-                <button class="btn-copy" onclick="copySection('active','all')">Copy All</button>
               </div>
             </div>
             <ul class="link-list" id="activeList" style="display:none"></ul>
@@ -153,16 +151,14 @@ http://10.0.0.1/iptv
           <!-- Down -->
           <div class="result-card down-card" id="downCard" style="display:none">
             <div class="card-header">
-              <div class="card-title">
-                <span class="status-dot red"></span>
-                <h3>Down / Dead</h3>
-                <span class="badge badge-red" id="downCount">0</span>
-              </div>
+              <span class="status-dot red"></span>
+              <h3>Down / Dead</h3>
+              <span class="badge badge-red" id="downCount">0</span>
               <div class="card-actions">
+                <button class="btn-copy" onclick="copySection('down','domains')">Domains</button>
+                <button class="btn-copy" onclick="copySection('down','links')">Links</button>
+                <button class="btn-copy" onclick="copySection('down','all')">All</button>
                 <button class="btn btn-outline btn-sm" onclick="toggleResultList('downList', this)">Show</button>
-                <button class="btn-copy" onclick="copySection('down','domains')">Copy Domains</button>
-                <button class="btn-copy" onclick="copySection('down','links')">Copy Links</button>
-                <button class="btn-copy" onclick="copySection('down','all')">Copy All</button>
               </div>
             </div>
             <ul class="link-list" id="downList" style="display:none"></ul>
@@ -171,16 +167,14 @@ http://10.0.0.1/iptv
           <!-- ISP Blocked -->
           <div class="result-card blocked-card" id="blockedCard" style="display:none">
             <div class="card-header">
-              <div class="card-title">
-                <span class="status-dot orange"></span>
-                <h3>ISP Blocked (Network Block)</h3>
-                <span class="badge badge-orange" id="blockedCount">0</span>
-              </div>
+              <span class="status-dot orange"></span>
+              <h3>ISP Blocked</h3>
+              <span class="badge badge-orange" id="blockedCount">0</span>
               <div class="card-actions">
+                <button class="btn-copy" onclick="copySection('blocked','domains')">Domains</button>
+                <button class="btn-copy" onclick="copySection('blocked','links')">Links</button>
+                <button class="btn-copy" onclick="copySection('blocked','all')">All</button>
                 <button class="btn btn-outline btn-sm" onclick="toggleResultList('blockedList', this)">Show</button>
-                <button class="btn-copy" onclick="copySection('blocked','domains')">Copy Domains</button>
-                <button class="btn-copy" onclick="copySection('blocked','links')">Copy Links</button>
-                <button class="btn-copy" onclick="copySection('blocked','all')">Copy All</button>
               </div>
             </div>
             <ul class="link-list" id="blockedList" style="display:none"></ul>
