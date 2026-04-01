@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,27 +11,28 @@
   <!-- Header -->
   <div class="header">
     <h1>
-      <span class="icon">IP</span>
+      <span class="icon">&gt;_</span>
       IP Domain Monitor
     </h1>
     <div class="header-actions">
-      <button class="btn btn-primary btn-sm" id="newTestBtn" onclick="newTest()" style="display:none">New Test</button>
+      <button class="btn btn-primary btn-sm" id="newTestBtn" onclick="newTest()" style="display:none">&gt; New Test</button>
       <button class="btn btn-outline btn-sm" onclick="exportCsv()">Export CSV</button>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark theme">&#9790;</button>
     </div>
   </div>
 
   <div class="main">
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" data-tab="monitor" onclick="switchTab('monitor')">Monitor</button>
-      <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+      <button class="tab active" data-tab="monitor" onclick="switchTab('monitor')">[ Monitor ]</button>
+      <button class="tab" data-tab="history" onclick="switchTab('history')">[ History ]</button>
     </div>
 
     <!-- Monitor Tab -->
     <div id="tab-monitor">
       <!-- Input -->
       <div class="input-section" id="inputSection">
-        <h2>Paste Links</h2>
+        <h2>&gt; Paste Links</h2>
         <p>Paste your list of domains, IPs, and URLs below. Mixed formats supported.</p>
         <textarea id="linkInput" placeholder="Paste links here... Examples:
 http://192.168.1.1:8080/live/stream
@@ -46,7 +47,7 @@ http://10.0.0.1/iptv
             Parse Links
           </button>
           <button class="btn btn-success" id="btnTest" onclick="testAll()" disabled>
-            Test All
+            Execute Scan
           </button>
           <label class="btn btn-outline" for="fileImport" style="cursor:pointer;">
             Import File
@@ -63,17 +64,17 @@ http://10.0.0.1/iptv
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
-        <div class="progress-text" id="progressText">Testing 0 / 0</div>
+        <div class="progress-text" id="progressText">Scanning 0 / 0</div>
       </div>
 
       <!-- Parsed Results -->
       <div class="parsed-section" id="parsedSection">
         <div class="parsed-header">
           <div class="card-title">
-            <h3>Extracted Links</h3>
+            <h3>Extracted Targets</h3>
             <span class="badge badge-blue" id="parsedCount">0</span>
           </div>
-          <button class="btn btn-outline btn-sm" id="btnToggleLinks" onclick="toggleParsedTable()">Show Links</button>
+          <button class="btn btn-outline btn-sm" id="btnToggleLinks" onclick="toggleParsedTable()">Show</button>
         </div>
         <div class="table-wrap" id="parsedTableWrap" style="display:none">
           <table>
@@ -191,8 +192,8 @@ http://10.0.0.1/iptv
       </div>
       <div id="historyList">
         <div class="empty-state">
-          <div class="icon">---</div>
-          <p>No history yet. Run a test to see results here.</p>
+          <div class="icon">&gt;_</div>
+          <p>No history yet. Run a scan to see results here.</p>
         </div>
       </div>
     </div>

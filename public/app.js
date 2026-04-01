@@ -670,8 +670,31 @@ function formatDate(dateStr) {
   });
 }
 
+// --- Theme Toggle ---
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  const btn = document.getElementById('themeToggle');
+  // Moon for dark, Sun for light
+  btn.innerHTML = theme === 'dark' ? '&#9790;' : '&#9728;';
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   // Set initial tab visibility
   document.getElementById('tab-history').style.display = 'none';
+  // Load saved theme
+  loadTheme();
 });
