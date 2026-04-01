@@ -449,35 +449,40 @@ tr:hover td {
 
 .results-grid {
   display: grid;
-  gap: 20px;
+  gap: 14px;
 }
 
 .result-card {
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid;
+  border-radius: 14px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.result-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .result-card.active-card {
-  background: var(--green-bg);
-  border-color: var(--green-border);
+  border-left: 4px solid var(--green);
 }
 
 .result-card.down-card {
-  background: var(--red-bg);
-  border-color: var(--red-border);
+  border-left: 4px solid var(--red);
 }
 
 .result-card.blocked-card {
-  background: var(--orange-bg);
-  border-color: var(--orange-border);
+  border-left: 4px solid var(--orange);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  padding: 14px 18px;
+  background: var(--surface);
 }
 
 .card-title {
@@ -487,53 +492,49 @@ tr:hover td {
 }
 
 .card-title h3 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .status-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   display: inline-block;
 }
 
-.status-dot.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
-.status-dot.red { background: var(--red); box-shadow: 0 0 8px var(--red); }
-.status-dot.orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+.status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.status-dot.orange { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
 
 .card-actions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
+  align-items: center;
 }
 
 .link-list {
   list-style: none;
+  padding: 6px 14px 14px;
 }
 
 .link-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: 8px;
-  margin-bottom: 6px;
-  background: rgba(0, 0, 0, 0.25);
+  margin-bottom: 4px;
+  background: var(--bg);
+  border: 1px solid transparent;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 14px;
-  gap: 12px;
-}
-
-[data-theme="light"] .link-item {
-  background: rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+  gap: 10px;
+  transition: border-color 0.15s;
 }
 
 .link-item:hover {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="light"] .link-item:hover {
-  background: rgba(0, 0, 0, 0.08);
+  border-color: var(--border);
 }
 
 .link-info {
@@ -582,7 +583,7 @@ tr:hover td {
 .stats-bar {
   display: none;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 24px;
 }
 
@@ -593,14 +594,43 @@ tr:hover td {
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 18px 16px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
+
+.stat-card:nth-child(1)::before { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+.stat-card:nth-child(2)::before { background: linear-gradient(90deg, #22c55e, var(--green)); }
+.stat-card:nth-child(3)::before { background: linear-gradient(90deg, #ef4444, var(--red)); }
+.stat-card:nth-child(4)::before { background: linear-gradient(90deg, #f97316, var(--orange)); }
+
+.stat-icon {
+  font-size: 20px;
+  margin-bottom: 6px;
+  opacity: 0.9;
 }
 
 .stat-number {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -610,9 +640,12 @@ tr:hover td {
 .stat-number.blue { color: var(--blue); }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
-  margin-top: 4px;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
 }
 
 /* History Tab */
