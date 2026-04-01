@@ -130,7 +130,7 @@ async function testAll() {
             document.getElementById('parsedSection').classList.remove('active');
             document.getElementById('newTestBtn').style.display = 'inline-flex';
 
-            showStats(msg);
+            try { showStats(msg); } catch(e) { console.error('showStats error:', e); }
             showResults(msg);
 
             showToast(`Testing complete! ${msg.active.count} active, ${msg.down.count} down, ${msg.ispBlocked.count} ISP blocked`);
@@ -196,15 +196,17 @@ function showIspBanner(isp, publicIp) {
     otherIsp = 'Other ISP';
   }
 
-  retestName.textContent = otherIsp;
-  retestBtn.style.display = 'inline-flex';
+  if (retestName) retestName.textContent = otherIsp;
+  if (retestBtn) retestBtn.style.display = 'inline-flex';
 
-  if (ISP_LOGOS[otherIsp]) {
-    retestLogo.src = ISP_LOGOS[otherIsp];
-    retestLogo.alt = otherIsp;
-    retestLogo.style.display = 'block';
-  } else {
-    retestLogo.style.display = 'none';
+  if (retestLogo) {
+    if (ISP_LOGOS[otherIsp]) {
+      retestLogo.src = ISP_LOGOS[otherIsp];
+      retestLogo.alt = otherIsp;
+      retestLogo.style.display = 'block';
+    } else {
+      retestLogo.style.display = 'none';
+    }
   }
 }
 
@@ -223,7 +225,6 @@ async function retestOtherISP() {
   // Re-run test with same parsed links
   const btn = document.getElementById('retestIspBtn');
   btn.disabled = true;
-  btn.textContent = 'Testing...';
 
   // Clear old results before re-testing
   resetResults();
@@ -262,7 +263,7 @@ async function retestOtherISP() {
           } else if (msg.type === 'done') {
             testResults = msg;
             updateProgress(msg.total, msg.total);
-            showStats(msg);
+            try { showStats(msg); } catch(e) { console.error('showStats error:', e); }
             showResults(msg);
             showToast(`Re-test complete via ${msg.testedVia}! ${msg.active.count} active, ${msg.down.count} down, ${msg.ispBlocked.count} ISP blocked`);
             setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
@@ -541,8 +542,8 @@ async function loadSession(id, testedVia) {
     document.getElementById('inputSection').style.display = 'none';
     document.getElementById('newTestBtn').style.display = 'inline-flex';
 
-    showIspBanner(testedVia || 'Unknown', null);
-    showStats(testResults);
+    try { showIspBanner(testedVia || 'Unknown', null); } catch(e) {}
+    try { showStats(testResults); } catch(e) {}
     showResults(testResults);
 
     setTimeout(() => {
