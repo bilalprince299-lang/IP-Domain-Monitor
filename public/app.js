@@ -225,6 +225,9 @@ async function retestOtherISP() {
   btn.disabled = true;
   btn.textContent = 'Testing...';
 
+  // Clear old results before re-testing
+  resetResults();
+
   const progress = document.getElementById('progressContainer');
   progress.classList.add('active');
   updateProgress(0, parsedLinks.length);
@@ -271,9 +274,33 @@ async function retestOtherISP() {
     showToast('Error: ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = 'Re-test via <strong id="retestIspName">' + otherIsp + '</strong>';
+    // Don't overwrite - showIspBanner already set the correct button
     setTimeout(() => progress.classList.remove('active'), 2000);
   }
+}
+
+// --- Reset Results (clear old data before re-test) ---
+function resetResults() {
+  // Clear all result lists
+  ['activeList', 'downList', 'blockedList'].forEach(id => {
+    const list = document.getElementById(id);
+    list.style.display = 'none';
+    list.innerHTML = '';
+  });
+
+  // Hide all result cards
+  ['activeCard', 'downCard', 'blockedCard'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  // Reset stats to 0
+  document.getElementById('statTotal').textContent = '0';
+  document.getElementById('statActive').textContent = '0';
+  document.getElementById('statDown').textContent = '0';
+  document.getElementById('statBlocked').textContent = '0';
+
+  // Clear testResults
+  testResults = null;
 }
 
 // --- Show Stats ---
@@ -295,6 +322,14 @@ function showStats(data) {
 function showResults(data) {
   const section = document.getElementById('resultsSection');
   section.classList.add('active');
+
+  // Reset all lists to hidden and toggle buttons to "Show"
+  ['activeList', 'downList', 'blockedList'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.querySelectorAll('.result-card .card-actions .btn-outline').forEach(btn => {
+    btn.textContent = 'Show';
+  });
 
   // Active
   renderResultList('active', data.active.items, 'activeCard', 'activeList', 'activeCount');
