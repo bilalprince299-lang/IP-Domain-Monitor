@@ -144,36 +144,40 @@ app.get('/api/info', async (req, res) => {
   }
 });
 
-// Helper: lookup single item info (ASN for IP, WHOIS for domain)
-async function lookupItemInfo(item) {
-  const host = item.host;
-  const isIp = item.type === 'ip';
+// Batch IP lookup via ip-api.com (up to 100 at once)
+async function batchIpLookup(ips) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify(ips.map(ip => ({ query: ip, fields: 'query,as,isp,org' })));
+    const options = {
+      hostname: 'ip-api.com', port: 80, path: '/batch', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) },
+    };
+    const req = http.request(options, (resp) => {
+      let body = '';
+      resp.on('data', c => body += c);
+      resp.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { resolve([]); } });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(8000, () => { req.destroy(); resolve([]); });
+    req.write(postData);
+    req.end();
+  });
+}
 
+// Fast WHOIS lookup with 4s timeout
+function quickWhois(host) {
   try {
-    if (isIp) {
-      const data = await new Promise((resolve, reject) => {
-        http.get(`http://ip-api.com/json/${host}?fields=query,as,asname,isp,org`, (resp) => {
-          let body = '';
-          resp.on('data', c => body += c);
-          resp.on('end', () => resolve(JSON.parse(body)));
-          resp.on('error', reject);
-        }).on('error', reject);
-      });
-      return `${data.as || 'Unknown'} (${data.isp || data.org || ''})`;
-    } else {
-      const raw = execSync(`whois ${host} 2>/dev/null`, { timeout: 10000, encoding: 'utf-8' });
-      let registrant = '';
-      for (const line of raw.split('\n')) {
-        const l = line.trim().toLowerCase();
-        const val = line.split(':').slice(1).join(':').trim();
-        if (l.startsWith('registrant organization') || l.startsWith('registrant name') || l.startsWith('org-name')) {
-          if (!registrant) registrant = val;
-        }
+    const raw = execSync(`whois ${host} 2>/dev/null`, { timeout: 4000, encoding: 'utf-8' });
+    for (const line of raw.split('\n')) {
+      const l = line.trim().toLowerCase();
+      const val = line.split(':').slice(1).join(':').trim();
+      if (l.startsWith('registrant organization') || l.startsWith('registrant name') || l.startsWith('org-name')) {
+        if (val) return val;
       }
-      return registrant || 'REDACTED / Not available';
     }
+    return 'REDACTED / Not available';
   } catch (e) {
-    return 'Lookup failed';
+    return 'Lookup timeout';
   }
 }
 
@@ -183,45 +187,58 @@ app.post('/api/export-excel', async (req, res) => {
   if (!items || !items.length) return res.status(400).json({ error: 'No items' });
 
   try {
-    // Lookup info for each item (5 at a time)
-    const results = [];
-    for (let i = 0; i < items.length; i += 5) {
-      const batch = items.slice(i, i + 5);
-      const infos = await Promise.all(batch.map(item => lookupItemInfo(item)));
-      batch.forEach((item, j) => {
-        const contentName = item.port ? `${item.host}:${item.port}` : item.host;
-        const originalLink = item.original || `${item.protocol}://${item.host}${item.port ? ':' + item.port : ''}`;
-        results.push({
-          'Sno': results.length + 1,
-          'ContentType': 'APP',
-          'ContentName': contentName,
-          'WHOIS URL owner / IP INFO for IP': infos[j],
-          'Licensee': 'All',
-          'IAM Category': 'Infringement of intellectual property rights',
-          'Entity': 'Ministry of Economy',
-          'Comments': originalLink,
-        });
-      });
+    // Separate IPs and domains
+    const ipItems = items.filter(i => i.type === 'ip');
+    const domainItems = items.filter(i => i.type !== 'ip');
+
+    // 1) Batch lookup all IPs at once (single API call, very fast)
+    const ipInfoMap = {};
+    if (ipItems.length > 0) {
+      const ipList = [...new Set(ipItems.map(i => i.host))];
+      const batchResult = await batchIpLookup(ipList);
+      for (const r of batchResult) {
+        if (r.query) ipInfoMap[r.query] = `${r.as || 'Unknown'} (${r.isp || r.org || ''})`;
+      }
     }
 
-    // Generate Excel
-    const ws = XLSX.utils.json_to_sheet(results);
+    // 2) WHOIS for domains - all in parallel (fast with 4s timeout)
+    const domainInfoMap = {};
+    if (domainItems.length > 0) {
+      const uniqueDomains = [...new Set(domainItems.map(i => i.host))];
+      const whoisResults = await Promise.all(uniqueDomains.map(d =>
+        new Promise(resolve => resolve({ host: d, info: quickWhois(d) }))
+      ));
+      for (const r of whoisResults) domainInfoMap[r.host] = r.info;
+    }
 
-    // Set column widths
+    // 3) Build Excel rows
+    const rows = items.map((item, i) => {
+      const contentName = item.port ? `${item.host}:${item.port}` : item.host;
+      const originalLink = item.original || `${item.protocol}://${item.host}${item.port ? ':' + item.port : ''}`;
+      const info = item.type === 'ip'
+        ? (ipInfoMap[item.host] || 'Unknown')
+        : (domainInfoMap[item.host] || 'Unknown');
+
+      return {
+        'Sno': i + 1,
+        'ContentType': 'APP',
+        'ContentName': contentName,
+        'WHOIS URL owner / IP INFO for IP': info,
+        'Licensee': 'All',
+        'IAM Category': 'Infringement of intellectual property rights',
+        'Entity': 'Ministry of Economy',
+        'Comments': originalLink,
+      };
+    });
+
+    // 4) Generate Excel
+    const ws = XLSX.utils.json_to_sheet(rows);
     ws['!cols'] = [
-      { wch: 5 },   // Sno
-      { wch: 14 },  // ContentType
-      { wch: 35 },  // ContentName
-      { wch: 45 },  // WHOIS/IP INFO
-      { wch: 10 },  // Licensee
-      { wch: 45 },  // IAM Category
-      { wch: 22 },  // Entity
-      { wch: 50 },  // Comments
+      { wch: 5 }, { wch: 14 }, { wch: 35 }, { wch: 45 },
+      { wch: 10 }, { wch: 45 }, { wch: 22 }, { wch: 50 },
     ];
-
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, category || 'Results');
-
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
