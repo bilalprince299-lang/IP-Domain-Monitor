@@ -215,6 +215,19 @@ app.post('/api/export-excel', async (req, res) => {
       for (const r of whoisResults) domainInfoMap[r.host] = r.info;
     }
 
+    // Known legitimate/CDN providers - highlight these in Excel
+    const legitimateKeywords = [
+      'cloudflare', 'google', 'akamai', 'amazon', 'aws', 'microsoft', 'azure',
+      'fastly', 'cloudfront', 'digitalocean', 'oracle', 'ibm', 'alibaba',
+      'ovh', 'hetzner', 'leaseweb', 'godaddy', 'namecheap', 'facebook', 'meta',
+      'apple', 'twitter', 'netflix', 'youtube', 'whatsapp', 'telegram',
+    ];
+
+    function isLegitimate(host, info) {
+      const combined = `${host} ${info}`.toLowerCase();
+      return legitimateKeywords.some(kw => combined.includes(kw));
+    }
+
     // 3) Build Excel rows
     const rows = items.map((item, i) => {
       const contentName = item.port ? `${item.host}:${item.port}` : item.host;
@@ -232,6 +245,7 @@ app.post('/api/export-excel', async (req, res) => {
         'IAM Category': 'Infringement of intellectual property rights',
         'Entity': 'Ministry of Economy',
         'Comments': originalLink,
+        '_legitimate': isLegitimate(item.host, info),
       };
     });
 
@@ -252,9 +266,13 @@ app.post('/api/export-excel', async (req, res) => {
       cell.border = { bottom: { style: 'thin', color: { argb: 'FF000000' } } };
     });
 
-    // Add data rows
+    // Add data rows - highlight legitimate domains/IPs
+    const lightGreenFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF90EE90' } };
     for (const row of rows) {
-      ws.addRow([row['Sno'], row['ContentType'], row['ContentName'], row['WHOIS URL owner / IP INFO for IP'], row['Licensee'], row['IAM Category'], row['Entity'], row['Comments']]);
+      const dataRow = ws.addRow([row['Sno'], row['ContentType'], row['ContentName'], row['WHOIS URL owner / IP INFO for IP'], row['Licensee'], row['IAM Category'], row['Entity'], row['Comments']]);
+      if (row._legitimate) {
+        dataRow.eachCell(cell => { cell.fill = lightGreenFill; });
+      }
     }
 
     // Column widths
