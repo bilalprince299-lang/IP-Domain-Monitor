@@ -244,8 +244,8 @@ app.post('/api/export-excel', async (req, res) => {
 
     // Orange background + bold + bigger font for header row
     const headerRow = ws.getRow(1);
-    headerRow.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFED7D31' } };
+    headerRow.font = { bold: true, size: 13, color: { argb: 'FF000000' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4D03F' } };
     headerRow.alignment = { vertical: 'middle' };
     headerRow.height = 28;
     headerRow.eachCell(cell => {
