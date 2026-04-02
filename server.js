@@ -215,17 +215,24 @@ app.post('/api/export-excel', async (req, res) => {
       for (const r of whoisResults) domainInfoMap[r.host] = r.info;
     }
 
-    // Known legitimate/CDN providers - highlight these in Excel
-    const legitimateKeywords = [
-      'cloudflare', 'google', 'akamai', 'amazon', 'aws', 'microsoft', 'azure',
-      'fastly', 'cloudfront', 'digitalocean', 'oracle', 'ibm', 'alibaba',
-      'ovh', 'hetzner', 'leaseweb', 'godaddy', 'namecheap', 'facebook', 'meta',
-      'apple', 'twitter', 'netflix', 'youtube', 'whatsapp', 'telegram',
+    // Known legitimate domains - only match the domain name itself
+    const legitimateDomains = [
+      'cloudflare.com', 'google.com', 'googleapis.com', 'google.ae', 'google.co',
+      'akamai.net', 'akamai.com', 'akamaitechnologies.com',
+      'amazon.com', 'amazon.ae', 'amazonaws.com', 'aws.amazon.com',
+      'microsoft.com', 'azure.com', 'live.com', 'outlook.com', 'office.com',
+      'fastly.net', 'fastly.com', 'cloudfront.net',
+      'digitalocean.com', 'oracle.com', 'ibm.com',
+      'facebook.com', 'meta.com', 'instagram.com', 'whatsapp.com',
+      'apple.com', 'icloud.com', 'twitter.com', 'x.com',
+      'netflix.com', 'youtube.com', 'spotify.com',
+      'telegram.org', 'telegram.me',
+      'godaddy.com', 'namecheap.com',
     ];
 
-    function isLegitimate(host, info) {
-      const combined = `${host} ${info}`.toLowerCase();
-      return legitimateKeywords.some(kw => combined.includes(kw));
+    function isLegitimate(host) {
+      const h = host.toLowerCase();
+      return legitimateDomains.some(d => h === d || h.endsWith('.' + d));
     }
 
     // 3) Build Excel rows
@@ -245,7 +252,7 @@ app.post('/api/export-excel', async (req, res) => {
         'IAM Category': 'Infringement of intellectual property rights',
         'Entity': 'Ministry of Economy',
         'Comments': originalLink,
-        '_legitimate': isLegitimate(item.host, info),
+        '_legitimate': isLegitimate(item.host),
       };
     });
 
