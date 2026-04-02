@@ -1,5 +1,8 @@
 const express = require('express');
 const path = require('path');
+const http = require('http');
+const { execSync } = require('child_process');
+const XLSX = require('xlsx');
 const { parseLinks } = require('./lib/parser');
 const { testLinks, testSingleLink, detectCurrentISP } = require('./lib/tester');
 const { saveTestSession, getHistory, getSessionResults, cleanOldData } = require('./lib/db');
@@ -83,7 +86,6 @@ app.get('/api/info', async (req, res) => {
   try {
     if (type === 'ip') {
       // IP ASN lookup via ip-api.com
-      const http = require('http');
       const data = await new Promise((resolve, reject) => {
         http.get(`http://ip-api.com/json/${host}?fields=query,as,asname,isp,org,country`, (resp) => {
           let body = '';
@@ -103,7 +105,6 @@ app.get('/api/info', async (req, res) => {
       });
     } else {
       // Domain WHOIS lookup via whois command
-      const { execSync } = require('child_process');
       const raw = execSync(`whois ${host} 2>/dev/null`, { timeout: 10000, encoding: 'utf-8' });
 
       // Parse registrant info
@@ -140,6 +141,95 @@ app.get('/api/info', async (req, res) => {
     }
   } catch (err) {
     res.json({ type, host, error: err.message || 'Lookup failed' });
+  }
+});
+
+// Helper: lookup single item info (ASN for IP, WHOIS for domain)
+async function lookupItemInfo(item) {
+  const host = item.host;
+  const isIp = item.type === 'ip';
+
+  try {
+    if (isIp) {
+      const data = await new Promise((resolve, reject) => {
+        http.get(`http://ip-api.com/json/${host}?fields=query,as,asname,isp,org`, (resp) => {
+          let body = '';
+          resp.on('data', c => body += c);
+          resp.on('end', () => resolve(JSON.parse(body)));
+          resp.on('error', reject);
+        }).on('error', reject);
+      });
+      return `${data.as || 'Unknown'} (${data.isp || data.org || ''})`;
+    } else {
+      const raw = execSync(`whois ${host} 2>/dev/null`, { timeout: 10000, encoding: 'utf-8' });
+      let registrant = '';
+      for (const line of raw.split('\n')) {
+        const l = line.trim().toLowerCase();
+        const val = line.split(':').slice(1).join(':').trim();
+        if (l.startsWith('registrant organization') || l.startsWith('registrant name') || l.startsWith('org-name')) {
+          if (!registrant) registrant = val;
+        }
+      }
+      return registrant || 'REDACTED / Not available';
+    }
+  } catch (e) {
+    return 'Lookup failed';
+  }
+}
+
+// Export Excel with WHOIS/ASN info
+app.post('/api/export-excel', async (req, res) => {
+  const { items, category } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'No items' });
+
+  try {
+    // Lookup info for each item (5 at a time)
+    const results = [];
+    for (let i = 0; i < items.length; i += 5) {
+      const batch = items.slice(i, i + 5);
+      const infos = await Promise.all(batch.map(item => lookupItemInfo(item)));
+      batch.forEach((item, j) => {
+        const contentName = item.port ? `${item.host}:${item.port}` : item.host;
+        const originalLink = item.original || `${item.protocol}://${item.host}${item.port ? ':' + item.port : ''}`;
+        results.push({
+          'Sno': results.length + 1,
+          'ContentType': 'APP',
+          'ContentName': contentName,
+          'WHOIS URL owner / IP INFO for IP': infos[j],
+          'Licensee': 'All',
+          'IAM Category': 'Infringement of intellectual property rights',
+          'Entity': 'Ministry of Economy',
+          'Comments': originalLink,
+        });
+      });
+    }
+
+    // Generate Excel
+    const ws = XLSX.utils.json_to_sheet(results);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 5 },   // Sno
+      { wch: 14 },  // ContentType
+      { wch: 35 },  // ContentName
+      { wch: 45 },  // WHOIS/IP INFO
+      { wch: 10 },  // Licensee
+      { wch: 45 },  // IAM Category
+      { wch: 22 },  // Entity
+      { wch: 50 },  // Comments
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, category || 'Results');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=AL-KHALEEJ-${(category || 'results').toUpperCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    res.send(buffer);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

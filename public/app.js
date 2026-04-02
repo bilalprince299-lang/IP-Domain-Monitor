@@ -509,6 +509,46 @@ async function lookupInfo(host, type, btn) {
   }
 }
 
+// --- Export Excel (per section) ---
+async function exportExcel(type, btn) {
+  if (!testResults) return;
+
+  let items, category;
+  if (type === 'active') { items = testResults.active.items; category = 'Active'; }
+  else if (type === 'down') { items = testResults.down.items; category = 'Down-Dead'; }
+  else if (type === 'blocked') { items = testResults.ispBlocked.items; category = 'ISP-Blocked'; }
+
+  if (!items || !items.length) return;
+
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = 'Loading...';
+
+  try {
+    const res = await fetch('/api/export-excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, category })
+    });
+
+    if (!res.ok) throw new Error('Export failed');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AL-KHALEEJ-${category.toUpperCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${items.length} items exported to Excel`);
+  } catch (err) {
+    showToast('Excel export failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
 // --- Export CSV ---
 function exportCsv() {
   if (!testResults) {

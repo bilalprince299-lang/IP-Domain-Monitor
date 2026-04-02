@@ -365,6 +365,28 @@ textarea::placeholder {
   color: var(--text);
 }
 
+.btn-excel {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-excel:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--green);
+}
+
+.btn-excel:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .btn-copy {
   background: var(--surface2);
   color: var(--text-dim);
