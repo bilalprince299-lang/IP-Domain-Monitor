@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const { execSync } = require('child_process');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const { parseLinks } = require('./lib/parser');
 const { testLinks, testSingleLink, detectCurrentISP } = require('./lib/tester');
 const { saveTestSession, getHistory, getSessionResults, cleanOldData } = require('./lib/db');
@@ -175,9 +175,9 @@ function quickWhois(host) {
         if (val) return val;
       }
     }
-    return 'REDACTED / Not available';
+    return 'Unknown';
   } catch (e) {
-    return 'Lookup timeout';
+    return 'Unknown';
   }
 }
 
@@ -197,7 +197,11 @@ app.post('/api/export-excel', async (req, res) => {
       const ipList = [...new Set(ipItems.map(i => i.host))];
       const batchResult = await batchIpLookup(ipList);
       for (const r of batchResult) {
-        if (r.query) ipInfoMap[r.query] = `${r.as || 'Unknown'} (${r.isp || r.org || ''})`;
+        if (r.query) {
+          const asNum = r.as ? r.as.split(' ')[0] : 'Unknown';
+          const ispName = r.isp || r.org || '';
+          ipInfoMap[r.query] = ispName ? `${asNum} (${ispName})` : asNum;
+        }
       }
     }
 
@@ -231,15 +235,34 @@ app.post('/api/export-excel', async (req, res) => {
       };
     });
 
-    // 4) Generate Excel
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [
-      { wch: 5 }, { wch: 14 }, { wch: 35 }, { wch: 45 },
-      { wch: 10 }, { wch: 45 }, { wch: 22 }, { wch: 50 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, category || 'Results');
-    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    // 4) Generate Excel with styled header
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet(category || 'Results');
+
+    const headers = ['Sno', 'ContentType', 'ContentName', 'WHOIS URL owner / IP INFO for IP', 'Licensee', 'IAM Category', 'Entity', 'Comments'];
+    ws.addRow(headers);
+
+    // Orange background + bold + bigger font for header row
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFED7D31' } };
+    headerRow.alignment = { vertical: 'middle' };
+    headerRow.height = 28;
+    headerRow.eachCell(cell => {
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FF000000' } } };
+    });
+
+    // Add data rows
+    for (const row of rows) {
+      ws.addRow([row['Sno'], row['ContentType'], row['ContentName'], row['WHOIS URL owner / IP INFO for IP'], row['Licensee'], row['IAM Category'], row['Entity'], row['Comments']]);
+    }
+
+    // Column widths
+    ws.columns.forEach((col, i) => {
+      col.width = [6, 14, 35, 45, 10, 45, 22, 50][i] || 15;
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=AL-KHALEEJ-${(category || 'results').toUpperCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
