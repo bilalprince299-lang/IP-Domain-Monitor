@@ -233,30 +233,28 @@ app.post('/api/export-excel', async (req, res) => {
       for (const r of whoisResults) domainInfoMap[r.host] = r.info;
     }
 
-    // 3) Fetch website titles for domains (parallel, 6s timeout)
+    // 3) Fetch website titles for ALL items - domains + IPs (parallel, 6s timeout)
     const titleMap = {};
-    if (domainItems.length > 0) {
-      const uniqueDomains = [...new Set(domainItems.map(i => ({ host: i.host, protocol: i.protocol, port: i.port })))];
-      const titleResults = await Promise.all(uniqueDomains.map(async (d) => {
-        const url = `${d.protocol}://${d.host}${d.port ? ':' + d.port : ''}`;
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 6000);
-          const resp = await fetch(url, {
-            signal: controller.signal,
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-            redirect: 'follow',
-          });
-          clearTimeout(timeout);
-          const html = await resp.text();
-          const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-          return { host: d.host, title: titleMatch ? titleMatch[1].trim().substring(0, 150) : '' };
-        } catch (e) {
-          return { host: d.host, title: '' };
-        }
-      }));
-      for (const r of titleResults) titleMap[r.host] = r.title;
-    }
+    const allUniqueHosts = [...new Map(items.map(i => [i.host, i])).values()];
+    const titleResults = await Promise.all(allUniqueHosts.map(async (d) => {
+      const url = `${d.protocol}://${d.host}${d.port ? ':' + d.port : ''}`;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        const resp = await fetch(url, {
+          signal: controller.signal,
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          redirect: 'follow',
+        });
+        clearTimeout(timeout);
+        const html = await resp.text();
+        const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+        return { host: d.host, title: titleMatch ? titleMatch[1].trim().substring(0, 150) : '' };
+      } catch (e) {
+        return { host: d.host, title: '' };
+      }
+    }));
+    for (const r of titleResults) titleMap[r.host] = r.title;
 
     // Known legitimate domains & ASNs
     const legitimateDomains = [
@@ -285,7 +283,7 @@ app.post('/api/export-excel', async (req, res) => {
       const info = item.type === 'ip'
         ? (ipInfoMap[item.host] || 'Unknown')
         : (domainInfoMap[item.host] || 'Unknown');
-      const websiteTitle = item.type !== 'ip' ? (titleMap[item.host] || '') : '';
+      const websiteTitle = titleMap[item.host] || '';
 
       return {
         'Sno': i + 1,
