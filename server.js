@@ -191,8 +191,25 @@ app.post('/api/export-excel', async (req, res) => {
     const ipItems = items.filter(i => i.type === 'ip');
     const domainItems = items.filter(i => i.type !== 'ip');
 
+    // Known CDN/Cloud ASNs - IPs owned by these should be highlighted
+    const legitimateASNs = [
+      'AS13335',  // Cloudflare
+      'AS15169',  // Google (includes Firebase)
+      'AS20940',  // Akamai
+      'AS16509',  // Amazon AWS / CloudFront
+      'AS14618',  // Amazon
+      'AS8075',   // Microsoft Azure
+      'AS54113',  // Fastly
+      'AS13414',  // Twitter / X
+      'AS32934',  // Facebook / Meta
+      'AS14907',  // Wikipedia
+      'AS2906',   // Netflix
+      'AS36459',  // GitHub
+    ];
+
     // 1) Batch lookup all IPs at once (single API call, very fast)
     const ipInfoMap = {};
+    const ipLegitMap = {};
     if (ipItems.length > 0) {
       const ipList = [...new Set(ipItems.map(i => i.host))];
       const batchResult = await batchIpLookup(ipList);
@@ -201,6 +218,7 @@ app.post('/api/export-excel', async (req, res) => {
           const asNum = r.as ? r.as.split(' ')[0] : 'Unknown';
           const ispName = r.isp || r.org || '';
           ipInfoMap[r.query] = ispName ? `${asNum} (${ispName})` : asNum;
+          ipLegitMap[r.query] = legitimateASNs.includes(asNum);
         }
       }
     }
@@ -252,7 +270,7 @@ app.post('/api/export-excel', async (req, res) => {
         'IAM Category': 'Infringement of intellectual property rights',
         'Entity': 'Ministry of Economy',
         'Comments': originalLink,
-        '_legitimate': isLegitimate(item.host),
+        '_legitimate': item.type === 'ip' ? (ipLegitMap[item.host] || false) : isLegitimate(item.host),
       };
     });
 
