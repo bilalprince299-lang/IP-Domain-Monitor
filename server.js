@@ -316,6 +316,105 @@ app.post('/api/export-excel', async (req, res) => {
   }
 });
 
+// Check what's running on active domains - fetch title & description
+app.post('/api/check-sites', async (req, res) => {
+  const { items } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'No items' });
+
+  // Only domains, not IPs
+  const domains = items.filter(i => i.type !== 'ip');
+
+  const results = await Promise.all(domains.map(async (item) => {
+    const url = `${item.protocol}://${item.host}${item.port ? ':' + item.port : ''}`;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const resp = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        redirect: 'follow',
+      });
+      clearTimeout(timeout);
+
+      const html = await resp.text();
+
+      // Extract title
+      const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+      const title = titleMatch ? titleMatch[1].trim().substring(0, 150) : '';
+
+      // Extract meta description
+      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)
+        || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i);
+      const description = descMatch ? descMatch[1].trim().substring(0, 250) : '';
+
+      // Extract meta keywords
+      const kwMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']*)["']/i)
+        || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']keywords["']/i);
+      const keywords = kwMatch ? kwMatch[1].trim().substring(0, 150) : '';
+
+      return {
+        domain: item.host,
+        url,
+        title: title || 'No title',
+        description: description || '',
+        keywords: keywords || '',
+        status: resp.status,
+        hasWebsite: true,
+      };
+    } catch (e) {
+      return {
+        domain: item.host,
+        url,
+        title: '',
+        description: '',
+        keywords: '',
+        status: 0,
+        hasWebsite: false,
+      };
+    }
+  }));
+
+  // Only return domains that have a website
+  const withSites = results.filter(r => r.hasWebsite);
+
+  // Generate Excel
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Active Sites');
+
+    const headers = ['Sno', 'Domain', 'Website Title', 'Description', 'Status', 'URL'];
+    ws.addRow(headers);
+
+    // Header styling
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true, size: 13, color: { argb: 'FF000000' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4D03F' } };
+    headerRow.alignment = { vertical: 'middle' };
+    headerRow.height = 28;
+    headerRow.eachCell(cell => {
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FF000000' } } };
+    });
+
+    withSites.forEach((r, i) => {
+      const row = ws.addRow([i + 1, r.domain, r.title, r.description, r.status, r.url]);
+      // Make URL clickable
+      row.getCell(6).value = { text: r.url, hyperlink: r.url };
+      row.getCell(6).font = { color: { argb: 'FF0563C1' }, underline: true };
+    });
+
+    ws.columns.forEach((col, i) => {
+      col.width = [6, 30, 40, 50, 10, 50][i] || 15;
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=AL-KHALEEJ-ACTIVE-SITES-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Re-test a single link
 app.post('/api/retest', async (req, res) => {
   const { link } = req.body;

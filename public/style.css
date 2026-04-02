@@ -387,6 +387,28 @@ textarea::placeholder {
   cursor: wait;
 }
 
+.btn-sites {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-sites:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: #a855f7;
+}
+
+.btn-sites:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .btn-copy {
   background: var(--surface2);
   color: var(--text-dim);

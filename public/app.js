@@ -549,6 +549,49 @@ async function exportExcel(type, btn) {
   }
 }
 
+// --- Check Active Sites (website info) ---
+async function checkSites(btn) {
+  if (!testResults || !testResults.active.items.length) {
+    showToast('No active domains to check');
+    return;
+  }
+
+  // Only domains, not IPs
+  const domainItems = testResults.active.items.filter(i => i.type !== 'ip');
+  if (!domainItems.length) {
+    showToast('No active domains found (only IPs)');
+    return;
+  }
+
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ Checking...';
+
+  try {
+    const res = await fetch('/api/check-sites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: domainItems })
+    });
+
+    if (!res.ok) throw new Error('Check failed');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AL-KHALEEJ-ACTIVE-SITES-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${domainItems.length} domains checked - Excel downloaded`);
+  } catch (err) {
+    showToast('Site check failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+
 // --- Export CSV ---
 function exportCsv() {
   if (!testResults) {
