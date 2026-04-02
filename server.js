@@ -233,7 +233,32 @@ app.post('/api/export-excel', async (req, res) => {
       for (const r of whoisResults) domainInfoMap[r.host] = r.info;
     }
 
-    // Known legitimate domains - only match the domain name itself
+    // 3) Fetch website titles for domains (parallel, 6s timeout)
+    const titleMap = {};
+    if (domainItems.length > 0) {
+      const uniqueDomains = [...new Set(domainItems.map(i => ({ host: i.host, protocol: i.protocol, port: i.port })))];
+      const titleResults = await Promise.all(uniqueDomains.map(async (d) => {
+        const url = `${d.protocol}://${d.host}${d.port ? ':' + d.port : ''}`;
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 6000);
+          const resp = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            redirect: 'follow',
+          });
+          clearTimeout(timeout);
+          const html = await resp.text();
+          const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+          return { host: d.host, title: titleMatch ? titleMatch[1].trim().substring(0, 150) : '' };
+        } catch (e) {
+          return { host: d.host, title: '' };
+        }
+      }));
+      for (const r of titleResults) titleMap[r.host] = r.title;
+    }
+
+    // Known legitimate domains & ASNs
     const legitimateDomains = [
       'cloudflare.com', 'google.com', 'googleapis.com', 'google.ae', 'google.co',
       'akamai.net', 'akamai.com', 'akamaitechnologies.com',
@@ -253,18 +278,20 @@ app.post('/api/export-excel', async (req, res) => {
       return legitimateDomains.some(d => h === d || h.endsWith('.' + d));
     }
 
-    // 3) Build Excel rows
+    // 4) Build Excel rows
     const rows = items.map((item, i) => {
       const contentName = item.port ? `${item.host}:${item.port}` : item.host;
       const originalLink = item.original || `${item.protocol}://${item.host}${item.port ? ':' + item.port : ''}`;
       const info = item.type === 'ip'
         ? (ipInfoMap[item.host] || 'Unknown')
         : (domainInfoMap[item.host] || 'Unknown');
+      const websiteTitle = item.type !== 'ip' ? (titleMap[item.host] || '') : '';
 
       return {
         'Sno': i + 1,
         'ContentType': 'APP',
         'ContentName': contentName,
+        'Website Title': websiteTitle,
         'WHOIS URL owner / IP INFO for IP': info,
         'Licensee': 'All',
         'IAM Category': 'Infringement of intellectual property rights',
@@ -274,14 +301,14 @@ app.post('/api/export-excel', async (req, res) => {
       };
     });
 
-    // 4) Generate Excel with styled header
+    // 5) Generate Excel with styled header
     const workbook = new ExcelJS.Workbook();
     const ws = workbook.addWorksheet(category || 'Results');
 
-    const headers = ['Sno', 'ContentType', 'ContentName', 'WHOIS URL owner / IP INFO for IP', 'Licensee', 'IAM Category', 'Entity', 'Comments'];
+    const headers = ['Sno', 'ContentType', 'ContentName', 'Website Title', 'WHOIS URL owner / IP INFO for IP', 'Licensee', 'IAM Category', 'Entity', 'Comments'];
     ws.addRow(headers);
 
-    // Orange background + bold + bigger font for header row
+    // Yellow background + bold + bigger font for header row
     const headerRow = ws.getRow(1);
     headerRow.font = { bold: true, size: 13, color: { argb: 'FF000000' } };
     headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4D03F' } };
@@ -294,7 +321,7 @@ app.post('/api/export-excel', async (req, res) => {
     // Add data rows - highlight legitimate domains/IPs
     const lightGreenFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF90EE90' } };
     for (const row of rows) {
-      const dataRow = ws.addRow([row['Sno'], row['ContentType'], row['ContentName'], row['WHOIS URL owner / IP INFO for IP'], row['Licensee'], row['IAM Category'], row['Entity'], row['Comments']]);
+      const dataRow = ws.addRow([row['Sno'], row['ContentType'], row['ContentName'], row['Website Title'], row['WHOIS URL owner / IP INFO for IP'], row['Licensee'], row['IAM Category'], row['Entity'], row['Comments']]);
       if (row._legitimate) {
         dataRow.eachCell(cell => { cell.fill = lightGreenFill; });
       }
@@ -302,7 +329,7 @@ app.post('/api/export-excel', async (req, res) => {
 
     // Column widths
     ws.columns.forEach((col, i) => {
-      col.width = [6, 14, 35, 45, 10, 45, 22, 50][i] || 15;
+      col.width = [6, 14, 35, 35, 45, 10, 45, 22, 50][i] || 15;
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -311,105 +338,6 @@ app.post('/api/export-excel', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=AL-KHALEEJ-${(category || 'results').toUpperCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
     res.send(buffer);
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Check what's running on active domains - fetch title & description
-app.post('/api/check-sites', async (req, res) => {
-  const { items } = req.body;
-  if (!items || !items.length) return res.status(400).json({ error: 'No items' });
-
-  // Only domains, not IPs
-  const domains = items.filter(i => i.type !== 'ip');
-
-  const results = await Promise.all(domains.map(async (item) => {
-    const url = `${item.protocol}://${item.host}${item.port ? ':' + item.port : ''}`;
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      const resp = await fetch(url, {
-        signal: controller.signal,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-        redirect: 'follow',
-      });
-      clearTimeout(timeout);
-
-      const html = await resp.text();
-
-      // Extract title
-      const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-      const title = titleMatch ? titleMatch[1].trim().substring(0, 150) : '';
-
-      // Extract meta description
-      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)
-        || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i);
-      const description = descMatch ? descMatch[1].trim().substring(0, 250) : '';
-
-      // Extract meta keywords
-      const kwMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']*)["']/i)
-        || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']keywords["']/i);
-      const keywords = kwMatch ? kwMatch[1].trim().substring(0, 150) : '';
-
-      return {
-        domain: item.host,
-        url,
-        title: title || 'No title',
-        description: description || '',
-        keywords: keywords || '',
-        status: resp.status,
-        hasWebsite: true,
-      };
-    } catch (e) {
-      return {
-        domain: item.host,
-        url,
-        title: '',
-        description: '',
-        keywords: '',
-        status: 0,
-        hasWebsite: false,
-      };
-    }
-  }));
-
-  // Only return domains that have a website
-  const withSites = results.filter(r => r.hasWebsite);
-
-  // Generate Excel
-  try {
-    const workbook = new ExcelJS.Workbook();
-    const ws = workbook.addWorksheet('Active Sites');
-
-    const headers = ['Sno', 'Domain', 'Website Title', 'Description', 'Status', 'URL'];
-    ws.addRow(headers);
-
-    // Header styling
-    const headerRow = ws.getRow(1);
-    headerRow.font = { bold: true, size: 13, color: { argb: 'FF000000' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4D03F' } };
-    headerRow.alignment = { vertical: 'middle' };
-    headerRow.height = 28;
-    headerRow.eachCell(cell => {
-      cell.border = { bottom: { style: 'thin', color: { argb: 'FF000000' } } };
-    });
-
-    withSites.forEach((r, i) => {
-      const row = ws.addRow([i + 1, r.domain, r.title, r.description, r.status, r.url]);
-      // Make URL clickable
-      row.getCell(6).value = { text: r.url, hyperlink: r.url };
-      row.getCell(6).font = { color: { argb: 'FF0563C1' }, underline: true };
-    });
-
-    ws.columns.forEach((col, i) => {
-      col.width = [6, 30, 40, 50, 10, 50][i] || 15;
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=AL-KHALEEJ-ACTIVE-SITES-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    res.send(buffer);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
