@@ -75,6 +75,74 @@ app.post('/api/test', async (req, res) => {
   }
 });
 
+// Lookup IP ASN or Domain WHOIS info
+app.get('/api/info', async (req, res) => {
+  const { host, type } = req.query;
+  if (!host) return res.status(400).json({ error: 'No host provided' });
+
+  try {
+    if (type === 'ip') {
+      // IP ASN lookup via ip-api.com
+      const http = require('http');
+      const data = await new Promise((resolve, reject) => {
+        http.get(`http://ip-api.com/json/${host}?fields=query,as,asname,isp,org,country`, (resp) => {
+          let body = '';
+          resp.on('data', c => body += c);
+          resp.on('end', () => resolve(JSON.parse(body)));
+          resp.on('error', reject);
+        }).on('error', reject);
+      });
+      res.json({
+        type: 'ip',
+        host,
+        asn: data.as || 'Unknown',
+        asname: data.asname || '',
+        isp: data.isp || '',
+        org: data.org || '',
+        country: data.country || '',
+      });
+    } else {
+      // Domain WHOIS lookup via whois command
+      const { execSync } = require('child_process');
+      const raw = execSync(`whois ${host} 2>/dev/null`, { timeout: 10000, encoding: 'utf-8' });
+
+      // Parse registrant info
+      let registrant = '', registrarName = '', creationDate = '', expiryDate = '', nameServers = [];
+      for (const line of raw.split('\n')) {
+        const l = line.trim().toLowerCase();
+        const val = line.split(':').slice(1).join(':').trim();
+        if (l.startsWith('registrant organization') || l.startsWith('registrant name') || l.startsWith('org-name')) {
+          if (!registrant) registrant = val;
+        }
+        if (l.startsWith('registrar:') || l.startsWith('registrar name')) {
+          if (!registrarName) registrarName = val;
+        }
+        if (l.startsWith('creation date') || l.startsWith('created')) {
+          if (!creationDate) creationDate = val;
+        }
+        if (l.startsWith('registry expiry date') || l.startsWith('expiry date') || l.startsWith('registrar registration expiration')) {
+          if (!expiryDate) expiryDate = val;
+        }
+        if (l.startsWith('name server')) {
+          nameServers.push(val);
+        }
+      }
+
+      res.json({
+        type: 'domain',
+        host,
+        registrant: registrant || 'REDACTED / Not available',
+        registrar: registrarName || 'Unknown',
+        created: creationDate || '',
+        expires: expiryDate || '',
+        nameServers: nameServers.slice(0, 2),
+      });
+    }
+  } catch (err) {
+    res.json({ type, host, error: err.message || 'Lookup failed' });
+  }
+});
+
 // Re-test a single link
 app.post('/api/retest', async (req, res) => {
   const { link } = req.body;

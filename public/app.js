@@ -376,6 +376,9 @@ function renderResultList(type, items, cardId, listId, countId) {
       metaTags += `<span class="tag" title="${esc(item.error)}">${truncate(item.error, 20)}</span>`;
     }
 
+    const infoType = item.type === 'ip' ? 'ip' : 'domain';
+    const infoHost = item.type === 'ip' ? item.host : item.host;
+
     return `
       <li class="link-item">
         <div class="link-info">
@@ -383,6 +386,7 @@ function renderResultList(type, items, cardId, listId, countId) {
         </div>
         <div class="link-meta">
           ${metaTags}
+          <button class="btn-info" onclick="lookupInfo('${esc(infoHost)}', '${infoType}', this)" title="${infoType === 'ip' ? 'ASN Info' : 'WHOIS Info'}">i</button>
           <button class="btn-copy" onclick="copyText('${esc(url)}', this)">Copy</button>
         </div>
       </li>
@@ -448,6 +452,61 @@ function copySection(type, mode) {
     const labels = { domains: 'Domains', links: 'Links', all: 'Links + Domains' };
     showToast(`${items.length} ${labels[mode]} copied to clipboard`);
   });
+}
+
+// --- Info Lookup (ASN / WHOIS) ---
+async function lookupInfo(host, type, btn) {
+  // Close any existing popup
+  document.querySelectorAll('.info-popup').forEach(p => p.remove());
+
+  btn.classList.add('loading');
+  btn.textContent = '...';
+
+  try {
+    const res = await fetch(`/api/info?host=${encodeURIComponent(host)}&type=${type}`);
+    const data = await res.json();
+
+    const popup = document.createElement('div');
+    popup.className = 'info-popup';
+
+    if (data.error) {
+      popup.innerHTML = `<div class="info-row"><span class="info-label">Error</span><span class="info-val">${esc(data.error)}</span></div>`;
+    } else if (data.type === 'ip') {
+      popup.innerHTML = `
+        <div class="info-header">${esc(host)} <span class="info-type">IP</span></div>
+        <div class="info-row"><span class="info-label">ASN</span><span class="info-val">${esc(data.asn)}</span></div>
+        ${data.isp ? `<div class="info-row"><span class="info-label">ISP</span><span class="info-val">${esc(data.isp)}</span></div>` : ''}
+        ${data.org ? `<div class="info-row"><span class="info-label">Org</span><span class="info-val">${esc(data.org)}</span></div>` : ''}
+        ${data.country ? `<div class="info-row"><span class="info-label">Country</span><span class="info-val">${esc(data.country)}</span></div>` : ''}
+      `;
+    } else {
+      popup.innerHTML = `
+        <div class="info-header">${esc(host)} <span class="info-type">Domain</span></div>
+        <div class="info-row"><span class="info-label">Registrant</span><span class="info-val">${esc(data.registrant)}</span></div>
+        <div class="info-row"><span class="info-label">Registrar</span><span class="info-val">${esc(data.registrar)}</span></div>
+        ${data.created ? `<div class="info-row"><span class="info-label">Created</span><span class="info-val">${esc(data.created)}</span></div>` : ''}
+        ${data.expires ? `<div class="info-row"><span class="info-label">Expires</span><span class="info-val">${esc(data.expires)}</span></div>` : ''}
+        ${data.nameServers.length ? `<div class="info-row"><span class="info-label">NS</span><span class="info-val">${data.nameServers.map(esc).join(', ')}</span></div>` : ''}
+      `;
+    }
+
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'info-close';
+    closeBtn.textContent = 'x';
+    closeBtn.onclick = () => popup.remove();
+    popup.prepend(closeBtn);
+
+    // Insert popup after the link-item
+    const li = btn.closest('.link-item');
+    li.after(popup);
+
+  } catch (err) {
+    showToast('Lookup failed: ' + err.message);
+  } finally {
+    btn.classList.remove('loading');
+    btn.textContent = 'i';
+  }
 }
 
 // --- Export CSV ---

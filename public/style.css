@@ -260,6 +260,111 @@ textarea::placeholder {
   border-radius: 8px;
 }
 
+.btn-info {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-info:hover {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+
+.btn-info.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Info Popup */
+.info-popup {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 6px 0;
+  position: relative;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.info-header {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.info-type {
+  font-size: 10px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-weight: 600;
+  font-family: -apple-system, sans-serif;
+  margin-left: 6px;
+}
+
+.info-row {
+  display: flex;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.info-label {
+  color: var(--text-dim);
+  min-width: 70px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.info-val {
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  word-break: break-all;
+}
+
+.info-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.info-close:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
 .btn-copy {
   background: var(--surface2);
   color: var(--text-dim);
