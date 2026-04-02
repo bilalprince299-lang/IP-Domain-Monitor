@@ -233,6 +233,22 @@ app.post('/api/export-excel', async (req, res) => {
       for (const r of whoisResults) domainInfoMap[r.host] = r.info;
     }
 
+    // 2b) Check resolved IPs of domains for CDN detection
+    const domainCdnMap = {};
+    const resolvedIps = [...new Set(domainItems.filter(i => i.resolvedIp).map(i => i.resolvedIp))];
+    if (resolvedIps.length > 0) {
+      const resolvedBatch = await batchIpLookup(resolvedIps);
+      const resolvedAsnMap = {};
+      for (const r of resolvedBatch) {
+        if (r.query) resolvedAsnMap[r.query] = r.as ? r.as.split(' ')[0] : '';
+      }
+      for (const item of domainItems) {
+        if (item.resolvedIp && resolvedAsnMap[item.resolvedIp]) {
+          domainCdnMap[item.host] = legitimateASNs.includes(resolvedAsnMap[item.resolvedIp]);
+        }
+      }
+    }
+
     // 3) Fetch website titles for ALL items - domains + IPs (parallel, 6s timeout)
     const titleMap = {};
     const allUniqueHosts = [...new Map(items.map(i => [i.host, i])).values()];
@@ -295,7 +311,9 @@ app.post('/api/export-excel', async (req, res) => {
         'IAM Category': 'Infringement of intellectual property rights',
         'Entity': 'Ministry of Economy',
         'Comments': originalLink,
-        '_legitimate': item.type === 'ip' ? (ipLegitMap[item.host] || false) : isLegitimate(item.host),
+        '_legitimate': item.type === 'ip'
+          ? (ipLegitMap[item.host] || false)
+          : (isLegitimate(item.host) || domainCdnMap[item.host] || false),
       };
     });
 

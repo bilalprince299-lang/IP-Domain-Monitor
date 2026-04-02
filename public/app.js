@@ -16,18 +16,19 @@ function switchTab(tab) {
   if (tab === 'history') loadHistory();
 }
 
-// --- Parse Links ---
-async function parseLinks() {
+// --- Parse & Test (single button) ---
+async function parseAndTest() {
   const text = document.getElementById('linkInput').value.trim();
   if (!text) {
-    showToast('Please paste some links first');
+    showToast('Please paste some links or domains first');
     return;
   }
 
-  const btn = document.getElementById('btnParse');
+  const btn = document.getElementById('btnTest');
   btn.disabled = true;
   btn.textContent = 'Parsing...';
 
+  // Step 1: Parse
   try {
     const res = await fetch('/api/parse', {
       method: 'POST',
@@ -39,7 +40,9 @@ async function parseLinks() {
     parsedLinks = data.links;
 
     if (parsedLinks.length === 0) {
-      showToast('No valid links found in the text');
+      showToast('No valid links found');
+      btn.disabled = false;
+      btn.textContent = 'Test';
       return;
     }
 
@@ -60,24 +63,14 @@ async function parseLinks() {
       </tr>
     `).join('');
 
-    // Enable test button
-    document.getElementById('btnTest').disabled = false;
-    showToast(`${parsedLinks.length} links extracted successfully`);
-
   } catch (err) {
     showToast('Error parsing links: ' + err.message);
-  } finally {
     btn.disabled = false;
-    btn.textContent = 'Parse Links';
+    btn.textContent = 'Test';
+    return;
   }
-}
 
-// --- Test All Links ---
-async function testAll() {
-  if (!parsedLinks.length) return;
-
-  const btn = document.getElementById('btnTest');
-  btn.disabled = true;
+  // Step 2: Test automatically
   btn.textContent = 'Testing...';
 
   // Show progress
@@ -152,7 +145,7 @@ async function testAll() {
     showToast('Error testing links: ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Test All';
+    btn.textContent = 'Test';
     setTimeout(() => {
       progress.classList.remove('active');
     }, 2000);
