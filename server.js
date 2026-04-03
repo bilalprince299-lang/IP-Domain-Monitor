@@ -351,7 +351,13 @@ app.post('/api/export-excel', async (req, res) => {
     const buffer = await workbook.xlsx.writeBuffer();
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=AL-KHALEEJ-${(category || 'results').toUpperCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const dateStr = `${dd}${mm}${yyyy}`;
+    const fileName = `${category || 'Results'} ${dateStr}_Block_1.xlsx`;
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.send(buffer);
 
   } catch (err) {

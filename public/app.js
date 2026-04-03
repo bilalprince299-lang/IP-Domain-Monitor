@@ -530,7 +530,11 @@ async function exportExcel(type, btn) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `AL-KHALEEJ-${category.toUpperCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    a.download = `${category} ${dd}${mm}${yyyy}_Block_1.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
     showToast(`${items.length} items exported to Excel`);
