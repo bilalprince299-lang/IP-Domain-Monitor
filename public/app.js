@@ -211,7 +211,7 @@ async function retestOtherISP() {
   }
 
   const otherIsp = document.getElementById('retestIspName').textContent;
-  if (!confirm(`Switch your network to ${otherIsp} first!\n\nKya aap ne ${otherIsp} pe switch kar liya hai?`)) {
+  if (!confirm(`Please switch your network to ${otherIsp} first.\n\nHave you switched to ${otherIsp}?`)) {
     return;
   }
 
@@ -421,18 +421,18 @@ function copySection(type, mode) {
   let text = '';
 
   if (mode === 'domains') {
-    // Sirf domain/IP + port (bina http/https)
+    // Domain/IP + port only (without protocol)
     text = items.map(item => {
       if (item.port) return `${item.host}:${item.port}`;
       return item.host;
     }).join('\n');
   }
   else if (mode === 'links') {
-    // Original full URLs jaisa paste kiya tha
+    // Original full URLs as pasted
     text = items.map(item => item.original || buildDisplayUrl(item)).join('\n');
   }
   else if (mode === 'all') {
-    // Dono - pehle original links, phir neeche domains/IPs
+    // Both - original links first, then domains/IPs below
     const links = items.map(item => item.original || buildDisplayUrl(item)).join('\n');
     const domains = items.map(item => {
       if (item.port) return `${item.host}:${item.port}`;
@@ -724,7 +724,7 @@ function importFile(event) {
     const content = e.target.result;
     const textarea = document.getElementById('linkInput');
 
-    // Agar textarea mein pehle se text hai to new line pe add karo
+    // Append to existing text if textarea is not empty
     if (textarea.value.trim()) {
       textarea.value += '\n' + content;
     } else {
@@ -733,7 +733,7 @@ function importFile(event) {
 
     showToast(`File "${file.name}" imported successfully`);
 
-    // Reset file input taa ke same file dobara import ho sake
+    // Reset file input so same file can be re-imported
     event.target.value = '';
   };
 
