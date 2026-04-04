@@ -506,15 +506,13 @@ async function lookupInfo(host, type, btn) {
 async function exportExcel(type, btn) {
   if (!testResults) return;
 
-  let items, defaultCategory;
-  if (type === 'active') { items = testResults.active.items; defaultCategory = 'Active'; }
-  else if (type === 'down') { items = testResults.down.items; defaultCategory = 'Down-Dead'; }
-  else if (type === 'blocked') { items = testResults.ispBlocked.items; defaultCategory = 'ISP-Blocked'; }
+  let items;
+  const category = 'StarzPlay';
+  if (type === 'active') { items = testResults.active.items; }
+  else if (type === 'down') { items = testResults.down.items; }
+  else if (type === 'blocked') { items = testResults.ispBlocked.items; }
 
   if (!items || !items.length) return;
-
-  const category = prompt('Enter file name:', defaultCategory);
-  if (!category) return;
 
   btn.disabled = true;
   const origText = btn.textContent;
