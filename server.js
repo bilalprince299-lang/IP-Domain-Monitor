@@ -334,12 +334,13 @@ app.post('/api/export-excel', async (req, res) => {
       cell.border = { bottom: { style: 'thin', color: { argb: 'FF000000' } } };
     });
 
-    // Add data rows - highlight legitimate domains/IPs
+    // Add data rows - font size 10, highlight legitimate domains/IPs
     const lightGreenFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF90EE90' } };
     for (const row of rows) {
       const dataRow = ws.addRow([row['Sno'], row['ContentType'], row['ContentName'], row['Website Title'], row['WHOIS URL owner / IP INFO for IP'], row['Licensee'], row['IAM Category'], row['Entity'], row['Comments']]);
+      dataRow.font = { size: 10 };
       if (row._legitimate) {
-        dataRow.eachCell(cell => { cell.fill = lightGreenFill; });
+        dataRow.eachCell(cell => { cell.fill = lightGreenFill; cell.font = { size: 10 }; });
       }
     }
 

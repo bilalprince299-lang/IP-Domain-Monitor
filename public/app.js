@@ -506,12 +506,15 @@ async function lookupInfo(host, type, btn) {
 async function exportExcel(type, btn) {
   if (!testResults) return;
 
-  let items, category;
-  if (type === 'active') { items = testResults.active.items; category = 'Active'; }
-  else if (type === 'down') { items = testResults.down.items; category = 'Down-Dead'; }
-  else if (type === 'blocked') { items = testResults.ispBlocked.items; category = 'ISP-Blocked'; }
+  let items, defaultCategory;
+  if (type === 'active') { items = testResults.active.items; defaultCategory = 'Active'; }
+  else if (type === 'down') { items = testResults.down.items; defaultCategory = 'Down-Dead'; }
+  else if (type === 'blocked') { items = testResults.ispBlocked.items; defaultCategory = 'ISP-Blocked'; }
 
   if (!items || !items.length) return;
+
+  const category = prompt('Enter file name:', defaultCategory);
+  if (!category) return;
 
   btn.disabled = true;
   const origText = btn.textContent;
