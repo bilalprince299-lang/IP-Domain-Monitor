@@ -722,6 +722,7 @@ tr:hover td {
 .link-meta .tag.ip { color: #c4b5fd; background: rgba(168, 85, 247, 0.15); }
 .link-meta .tag.time { color: #cbd5e1; }
 .link-meta .tag.isp { color: #fdba74; background: rgba(249, 115, 22, 0.15); }
+.link-meta .tag.warn { color: #fde68a; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 600; cursor: help; }
 
 /* Stats Bar */
 .stats-bar {

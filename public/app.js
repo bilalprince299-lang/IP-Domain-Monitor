@@ -362,6 +362,9 @@ function renderResultList(type, items, cardId, listId, countId) {
     if (item.ispName) {
       metaTags += `<span class="tag isp">${esc(item.ispName)}</span>`;
     }
+    if (item.dnsBlockBypassable) {
+      metaTags += `<span class="tag warn" title="ISP DNS blocks this domain, but browsers using DoH (Chrome/Firefox default) can still access it. Block is ineffective.">DNS Block Bypassable</span>`;
+    }
     if (item.statusCode) {
       metaTags += `<span class="tag">${item.statusCode}</span>`;
     }
@@ -653,6 +656,8 @@ async function loadSession(id, testedVia) {
 }
 
 function mapDbResult(r) {
+  // Infer bypassable-DNS-block flag from saved error text for history view
+  const bypassable = r.status === 'active' && r.error && /bypassable|accessible/i.test(r.error);
   return {
     original: r.original,
     host: r.host,
@@ -665,6 +670,7 @@ function mapDbResult(r) {
     responseTime: r.response_time,
     error: r.error,
     ispName: r.isp_name,
+    dnsBlockBypassable: bypassable,
   };
 }
 
