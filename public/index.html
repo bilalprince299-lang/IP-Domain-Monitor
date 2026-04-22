@@ -50,10 +50,27 @@ http://10.0.0.1/iptv
             Import File
           </label>
           <input type="file" id="fileImport" accept=".txt,.csv,.tsv,.log,.m3u,.m3u8,.json,.xml,.lst,.dat" style="display:none" onchange="importFile(event)">
+          <label class="btn btn-excel-import" for="excelImport" style="cursor:pointer;">
+            Import Excel
+          </label>
+          <input type="file" id="excelImport" accept=".xlsx,.xls" style="display:none" onchange="importExcelFile(event)">
           <button class="btn btn-outline" onclick="clearAll()">
             Clear
           </button>
         </div>
+      </div>
+
+      <!-- Excel Import Progress -->
+      <div class="excel-import-status" id="excelImportStatus" style="display:none">
+        <div class="excel-import-header">
+          <span class="excel-icon">&#128196;</span>
+          <span id="excelFileName">file.xlsx</span>
+          <span class="badge badge-blue" id="excelLinkCount">0 links</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="excelProgressFill"></div>
+        </div>
+        <div class="progress-text" id="excelProgressText">Reading Excel...</div>
       </div>
 
       <!-- Progress -->

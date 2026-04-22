@@ -387,6 +387,62 @@ textarea::placeholder {
   cursor: wait;
 }
 
+/* Excel Import Button (green with file icon) */
+.btn-excel-import {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-excel-import:hover {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: var(--green);
+  transform: translateY(-1px);
+}
+
+/* Excel Import Status Panel */
+.excel-import-status {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.excel-import-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+.excel-icon { font-size: 20px; }
+.excel-import-status .progress-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.excel-import-status .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--blue));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.excel-import-status .progress-text {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .btn-sites {
   background: rgba(168, 85, 247, 0.1);
   color: #a855f7;

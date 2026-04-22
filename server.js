@@ -1,13 +1,16 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');
 const { execSync } = require('child_process');
 const ExcelJS = require('exceljs');
+const multer = require('multer');
 const { parseLinks } = require('./lib/parser');
 const { testLinks, testSingleLink, detectCurrentISP } = require('./lib/tester');
 const { saveTestSession, getHistory, getSessionResults, cleanOldData } = require('./lib/db');
 
 const app = express();
+const upload = multer({ dest: path.join(__dirname, 'data', 'uploads'), limits: { fileSize: 20 * 1024 * 1024 } });
 const PORT = 2397;
 
 app.use(express.json({ limit: '5mb' }));
@@ -75,6 +78,130 @@ app.post('/api/test', async (req, res) => {
   } catch (err) {
     res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
     res.end();
+  }
+});
+
+// ========== IMPORT EXCEL - Read Col A, clean to Col C, test results to Col L ==========
+app.post('/api/import-excel', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  // SSE for real-time progress
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const filePath = req.file.path;
+
+  try {
+    // 1) Read uploaded Excel
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    const ws = workbook.getWorksheet(1);
+    if (!ws) throw new Error('No worksheet found in file');
+
+    // 2) Read Column A (all rows), extract links, keep duplicates
+    const rows = [];
+    ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      const cellA = row.getCell(1).text || row.getCell(1).value || '';
+      const rawValue = String(cellA).trim();
+      if (rawValue) {
+        rows.push({ rowNumber, rawValue });
+      }
+    });
+
+    // Skip first row if it looks like a header
+    const firstVal = rows.length > 0 ? rows[0].rawValue.toLowerCase() : '';
+    const isHeader = /^(url|link|domain|ip|host|address|website|site|content)/i.test(firstVal);
+    const dataRows = isHeader ? rows.slice(1) : rows;
+
+    if (dataRows.length === 0) throw new Error('No data found in Column A');
+
+    // 3) Clean each value: extract domain/IP + port
+    const entries = [];
+    for (const row of dataRows) {
+      const parsed = parseLinks(row.rawValue);
+      if (parsed.length > 0) {
+        // Take first match (most specific)
+        const p = parsed[0];
+        const cleaned = p.port ? `${p.host}:${p.port}` : p.host;
+        entries.push({ ...row, cleaned, parsed: p });
+      } else {
+        // Try raw value as-is (might be bare text like "example.com")
+        entries.push({ ...row, cleaned: row.rawValue, parsed: null });
+      }
+    }
+
+    const testableEntries = entries.filter(e => e.parsed);
+
+    res.write(`data: ${JSON.stringify({ type: 'parsed', total: entries.length, testable: testableEntries.length })}\n\n`);
+
+    // 4) Test all parsed links (keep duplicates - test each one)
+    const testItems = testableEntries.map(e => e.parsed);
+    let completed = 0;
+    const results = await testLinks(testItems, (done, total) => {
+      completed = done;
+      res.write(`data: ${JSON.stringify({ type: 'progress', completed: done, total })}\n\n`);
+    });
+
+    // Build result map keyed by index
+    const resultMap = new Map();
+    testableEntries.forEach((e, i) => {
+      resultMap.set(e.rowNumber, results[i]);
+    });
+
+    // 5) Write Column C (cleaned domain/IP) and Column L (result with colors)
+    for (const entry of entries) {
+      const row = ws.getRow(entry.rowNumber);
+
+      // Column C = cleaned domain/IP
+      row.getCell(3).value = entry.cleaned;
+
+      // Column L = test result with color
+      const result = resultMap.get(entry.rowNumber);
+      if (result) {
+        if (result.status === 'isp_blocked') {
+          row.getCell(12).value = 'Blocked';
+          row.getCell(12).font = { color: { argb: 'FFFF0000' }, bold: true, size: 11 };
+        } else if (result.status === 'down') {
+          row.getCell(12).value = 'Down';
+          row.getCell(12).font = { color: { argb: 'FFFF8C00' }, bold: true, size: 11 };
+        }
+        // Active = leave empty (no text in Column L)
+      } else {
+        // Could not parse - mark as unparseable
+        row.getCell(12).value = 'Invalid';
+        row.getCell(12).font = { color: { argb: 'FF999999' }, italic: true, size: 10 };
+      }
+
+      row.commit();
+    }
+
+    // 6) Write modified Excel to buffer and send as download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const base64 = buffer.toString('base64');
+
+    const activeCount = results.filter(r => r.status === 'active').length;
+    const downCount = results.filter(r => r.status === 'down').length;
+    const blockedCount = results.filter(r => r.status === 'isp_blocked').length;
+
+    res.write(`data: ${JSON.stringify({
+      type: 'done',
+      total: entries.length,
+      active: activeCount,
+      down: downCount,
+      blocked: blockedCount,
+      file: base64,
+      fileName: req.file.originalname.replace(/\.xlsx?$/i, '') + '_results.xlsx',
+    })}\n\n`);
+
+    res.end();
+  } catch (err) {
+    res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+    res.end();
+  } finally {
+    // Cleanup uploaded file
+    try { fs.unlinkSync(filePath); } catch (e) {}
   }
 });
 

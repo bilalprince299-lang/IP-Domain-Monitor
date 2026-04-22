@@ -751,6 +751,107 @@ function importFile(event) {
   reader.readAsText(file);
 }
 
+// --- Import Excel (Column A → Clean → Test → Download) ---
+async function importExcelFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = ''; // reset for re-import
+
+  const statusDiv = document.getElementById('excelImportStatus');
+  const fileName = document.getElementById('excelFileName');
+  const linkCount = document.getElementById('excelLinkCount');
+  const progressFill = document.getElementById('excelProgressFill');
+  const progressText = document.getElementById('excelProgressText');
+
+  // Show status UI
+  statusDiv.style.display = 'block';
+  fileName.textContent = file.name;
+  linkCount.textContent = 'Reading...';
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Uploading Excel file...';
+
+  // Disable other buttons during import
+  const btnTest = document.getElementById('btnTest');
+  btnTest.disabled = true;
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/import-excel', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const json = line.slice(6);
+        if (!json) continue;
+
+        try {
+          const msg = JSON.parse(json);
+
+          if (msg.type === 'parsed') {
+            linkCount.textContent = `${msg.testable} links found`;
+            progressText.textContent = `Testing ${msg.testable} links...`;
+          }
+          else if (msg.type === 'progress') {
+            const pct = msg.total > 0 ? (msg.completed / msg.total) * 100 : 0;
+            progressFill.style.width = pct + '%';
+            progressText.textContent = `Testing ${msg.completed} / ${msg.total}`;
+          }
+          else if (msg.type === 'done') {
+            progressFill.style.width = '100%';
+            progressText.textContent = `Done! Active: ${msg.active} | Down: ${msg.down} | Blocked: ${msg.blocked}`;
+            linkCount.textContent = `${msg.total} links`;
+
+            // Auto-download the result Excel
+            const byteChars = atob(msg.file);
+            const byteArr = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+            const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = msg.fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast(`Excel processed! ${msg.active} active, ${msg.down} down, ${msg.blocked} blocked. File downloaded.`);
+          }
+          else if (msg.type === 'error') {
+            progressText.textContent = 'Error: ' + msg.error;
+            showToast('Excel import error: ' + msg.error);
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+    }
+  } catch (err) {
+    progressText.textContent = 'Upload failed: ' + err.message;
+    showToast('Excel import failed: ' + err.message);
+  } finally {
+    btnTest.disabled = false;
+    // Auto-hide status after 10 seconds
+    setTimeout(() => {
+      statusDiv.style.display = 'none';
+    }, 10000);
+  }
+}
+
 // --- Clear History ---
 async function clearHistory() {
   if (!confirm('Are you sure? All history will be deleted.')) return;
