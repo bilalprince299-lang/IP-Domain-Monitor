@@ -181,16 +181,16 @@ app.post('/api/import-excel', upload.single('file'), async (req, res) => {
     const buffer = await workbook.xlsx.writeBuffer();
     const base64 = buffer.toString('base64');
 
-    const activeCount = results.filter(r => r.status === 'active').length;
-    const downCount = results.filter(r => r.status === 'down').length;
-    const blockedCount = results.filter(r => r.status === 'isp_blocked').length;
+    const activeItems = results.filter(r => r.status === 'active');
+    const downItems = results.filter(r => r.status === 'down');
+    const blockedItems = results.filter(r => r.status === 'isp_blocked');
 
     res.write(`data: ${JSON.stringify({
       type: 'done',
       total: entries.length,
-      active: activeCount,
-      down: downCount,
-      blocked: blockedCount,
+      active: { count: activeItems.length, items: activeItems },
+      down: { count: downItems.length, items: downItems },
+      ispBlocked: { count: blockedItems.length, items: blockedItems },
       file: base64,
       fileName: req.file.originalname.replace(/\.xlsx?$/i, '') + '_results.xlsx',
     })}\n\n`);

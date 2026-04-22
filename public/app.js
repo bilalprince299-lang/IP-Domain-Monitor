@@ -814,10 +814,10 @@ async function importExcelFile(event) {
           }
           else if (msg.type === 'done') {
             progressFill.style.width = '100%';
-            progressText.textContent = `Done! Active: ${msg.active} | Down: ${msg.down} | Blocked: ${msg.blocked}`;
+            progressText.textContent = `Done! Active: ${msg.active.count} | Down: ${msg.down.count} | Blocked: ${msg.ispBlocked.count}`;
             linkCount.textContent = `${msg.total} links`;
 
-            // Auto-download the result Excel
+            // Auto-download the result Excel (Column C + L format)
             const byteChars = atob(msg.file);
             const byteArr = new Uint8Array(byteChars.length);
             for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
@@ -829,7 +829,18 @@ async function importExcelFile(event) {
             a.click();
             URL.revokeObjectURL(url);
 
-            showToast(`Excel processed! ${msg.active} active, ${msg.down} down, ${msg.blocked} blocked. File downloaded.`);
+            // Also show results in the normal UI with StarzPlay Excel buttons
+            testResults = msg;
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('newTestBtn').style.display = 'inline-flex';
+            try { showStats(msg); } catch(e) { console.error('showStats error:', e); }
+            showResults(msg);
+
+            showToast(`Excel processed! ${msg.active.count} active, ${msg.down.count} down, ${msg.ispBlocked.count} blocked. File downloaded.`);
+
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
           }
           else if (msg.type === 'error') {
             progressText.textContent = 'Error: ' + msg.error;
