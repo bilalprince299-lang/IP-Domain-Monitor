@@ -5,6 +5,12 @@
 let parsedLinks = [];
 let testResults = null;
 
+// Get currently selected verification mode (quick/deep/both)
+function getSelectedMode() {
+  const radio = document.querySelector('input[name="testMode"]:checked');
+  return radio ? radio.value : 'quick';
+}
+
 // --- Tab Switching ---
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -82,7 +88,7 @@ async function parseAndTest() {
     const response = await fetch('/api/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ links: parsedLinks })
+      body: JSON.stringify({ links: parsedLinks, mode: getSelectedMode() })
     });
 
     const reader = response.body.getReader();
@@ -230,7 +236,7 @@ async function retestOtherISP() {
     const response = await fetch('/api/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ links: parsedLinks })
+      body: JSON.stringify({ links: parsedLinks, mode: getSelectedMode() })
     });
 
     const reader = response.body.getReader();
@@ -777,6 +783,7 @@ async function importExcelFile(event) {
   try {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('mode', getSelectedMode());
 
     const response = await fetch('/api/import-excel', {
       method: 'POST',
@@ -805,7 +812,8 @@ async function importExcelFile(event) {
 
           if (msg.type === 'parsed') {
             linkCount.textContent = `${msg.testable} links found`;
-            progressText.textContent = `Testing ${msg.testable} links...`;
+            const modeLabel = msg.mode === 'deep' ? 'Deep verification' : (msg.mode === 'both' ? 'Both modes' : 'Quick test');
+            progressText.textContent = `${modeLabel} on ${msg.testable} links...`;
           }
           else if (msg.type === 'progress') {
             const pct = msg.total > 0 ? (msg.completed / msg.total) * 100 : 0;

@@ -42,6 +42,34 @@ streaming-site.com
 http://10.0.0.1/iptv
 172.16.0.1"></textarea>
 
+        <!-- Verification Mode Selector -->
+        <div class="mode-selector">
+          <span class="mode-label">Verification Mode:</span>
+          <div class="mode-options">
+            <label class="mode-option">
+              <input type="radio" name="testMode" value="quick" checked>
+              <span class="mode-pill">
+                <strong>Quick</strong>
+                <small>2-3 sec/link &middot; ~85% accurate</small>
+              </span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="testMode" value="deep">
+              <span class="mode-pill">
+                <strong>Deep</strong>
+                <small>8-12 sec/link &middot; ~99% accurate</small>
+              </span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="testMode" value="both">
+              <span class="mode-pill">
+                <strong>Both</strong>
+                <small>Quick first, then verify uncertain ones</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div class="btn-row">
           <button class="btn btn-success" id="btnTest" onclick="parseAndTest()">
             Test

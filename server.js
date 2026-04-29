@@ -6,7 +6,7 @@ const { execSync } = require('child_process');
 const ExcelJS = require('exceljs');
 const multer = require('multer');
 const { parseLinks } = require('./lib/parser');
-const { testLinks, testSingleLink, detectCurrentISP } = require('./lib/tester');
+const { testLinks, testLinksBoth, testSingleLink, detectCurrentISP } = require('./lib/tester');
 const { saveTestSession, getHistory, getSessionResults, cleanOldData } = require('./lib/db');
 
 const app = express();
@@ -37,8 +37,10 @@ app.get('/api/isp', async (req, res) => {
 
 // Test all parsed links with real-time progress (SSE)
 app.post('/api/test', async (req, res) => {
-  const { links } = req.body;
+  const { links, mode } = req.body;
   if (!links || !links.length) return res.status(400).json({ error: 'No links provided' });
+
+  const verifyMode = ['quick', 'deep', 'both'].includes(mode) ? mode : 'quick';
 
   // Setup SSE
   res.setHeader('Content-Type', 'text/event-stream');
@@ -49,12 +51,15 @@ app.post('/api/test', async (req, res) => {
   try {
     // Detect ISP before testing
     const ispInfo = await detectCurrentISP();
-    res.write(`data: ${JSON.stringify({ type: 'isp', isp: ispInfo.isp, publicIp: ispInfo.publicIp || null })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'isp', isp: ispInfo.isp, publicIp: ispInfo.publicIp || null, mode: verifyMode })}\n\n`);
 
-    // Test with progress callback
-    const results = await testLinks(links, (completed, total) => {
+    // Test with progress callback - choose function based on mode
+    const progressCb = (completed, total) => {
       res.write(`data: ${JSON.stringify({ type: 'progress', completed, total })}\n\n`);
-    });
+    };
+    const results = verifyMode === 'both'
+      ? await testLinksBoth(links, progressCb)
+      : await testLinks(links, progressCb, verifyMode);
 
     // Save to history with ISP info
     const sessionId = saveTestSession(results, ispInfo.isp);
@@ -84,6 +89,9 @@ app.post('/api/test', async (req, res) => {
 // ========== IMPORT EXCEL - Read Col A, clean to Col C, test results to Col L ==========
 app.post('/api/import-excel', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  const mode = req.body.mode;
+  const verifyMode = ['quick', 'deep', 'both'].includes(mode) ? mode : 'quick';
 
   // SSE for real-time progress
   res.setHeader('Content-Type', 'text/event-stream');
@@ -134,15 +142,16 @@ app.post('/api/import-excel', upload.single('file'), async (req, res) => {
 
     const testableEntries = entries.filter(e => e.parsed);
 
-    res.write(`data: ${JSON.stringify({ type: 'parsed', total: entries.length, testable: testableEntries.length })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'parsed', total: entries.length, testable: testableEntries.length, mode: verifyMode })}\n\n`);
 
     // 4) Test all parsed links (keep duplicates - test each one)
     const testItems = testableEntries.map(e => e.parsed);
-    let completed = 0;
-    const results = await testLinks(testItems, (done, total) => {
-      completed = done;
+    const progressCb = (done, total) => {
       res.write(`data: ${JSON.stringify({ type: 'progress', completed: done, total })}\n\n`);
-    });
+    };
+    const results = verifyMode === 'both'
+      ? await testLinksBoth(testItems, progressCb)
+      : await testLinks(testItems, progressCb, verifyMode);
 
     // Build result map keyed by index
     const resultMap = new Map();
